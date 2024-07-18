@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique
+  password    String
+  email       String    @unique
+  name        String
+  isMember    Boolean   @default(false)
+  isAdmin     Boolean   @default(false)
+  isSuperamin Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLogin   DateTime?
+  isActive    Boolean   @default(true)
+  //
+  // company      Company            @relation(fields: [companyId], references: [id])
+  // companyId    Int                @default(0)
+  // groups       UserGroups[]
+  // notes        UserNotes[]
+  // reservations UserReservations[]
+}
