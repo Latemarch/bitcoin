@@ -9,15 +9,12 @@ function Websocket() {
 
   useEffect(() => {
     const ws = new WebsocketClient({
-      // key: "25iJ9xag63KOM2jcCj",
-      // secret: "bNGmxW2p9zj5vHtVxakkra7tq6N05AUGofKl",
+      // key: "key",
+      // secret: "secret",
       market: "v5", // For Linear contracts
       testnet: true, // Use testnet
     });
     ws.subscribeV5(["publicTrade.BTCUSDT"], "linear");
-
-    // ws.subscribeV5("position", "linear");
-    // ws.subscribeV5("publicTrade.BTC", "option");
 
     ws.on("open", () => {
       console.log("WebSocket Connection Opened");
