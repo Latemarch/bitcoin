@@ -1,9 +1,12 @@
-import Websocket from "@/components/Websocket";
+import CandleChart from "@/components/CandleChart";
+import WebsocketBybit from "@/components/Websocket_bybit";
+import WebsocketServer from "@/components/WebsocketServer";
 
 export default function page() {
   return (
     <div>
-      <Websocket />
+      <WebsocketBybit />
+      <CandleChart />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 //@ts-ignore
 import { WebsocketClient } from "bybit-api";
 
-function Websocket() {
+export default function WebsocketBybit() {
   const [messages, setMessages] = useState<any>([]);
 
   useEffect(() => {
@@ -37,13 +37,11 @@ function Websocket() {
   return (
     <div className="App">
       <h1>Bybit WebSocket Messages</h1>
-      <ul>
+      {/* <ul>
         {messages.map((message: any, index: number) => (
           <li key={index}>{JSON.stringify(message)}</li>
         ))}
-      </ul>
+      </ul> */}
     </div>
   );
 }
-
-export default Websocket;
