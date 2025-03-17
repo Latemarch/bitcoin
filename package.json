@@ -11,7 +11,7 @@
   "dependencies": {
     "@prisma/client": "^5.17.0",
     "axios": "^1.7.2",
-    "bybit-api": "^3.10.11",
+    "bybit-api": "^3.11.0",
     "echarts": "^5.5.1",
     "echarts-for-react": "^3.0.2",
     "next": "14.2.5",
