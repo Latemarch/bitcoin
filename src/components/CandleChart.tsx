@@ -90,40 +90,17 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       // Update candle positions and heights
       candles
         .selectAll('rect')
-        .attr('x', function (d) {
-          const datum = d as unknown as BybitKline;
-          return rescaleX(new Date(Number(datum[0])));
-        })
-        .attr('y', function (d) {
-          const datum = d as unknown as BybitKline;
-          return rescaleY(Math.max(Number(datum[1]), Number(datum[4])));
-        })
-        .attr('height', function (d) {
-          const datum = d as unknown as BybitKline;
-          const openPrice = Number(datum[1]);
-          const closePrice = Number(datum[4]);
-          return Math.abs(rescaleY(openPrice) - rescaleY(closePrice));
-        });
+        .attr('x', (d: any) => rescaleX(new Date(Number(d[0]))))
+        .attr('y', (d: any) => rescaleY(Math.max(Number(d[1]), Number(d[4]))))
+        .attr('height', (d: any) => Math.abs(rescaleY(Number(d[1])) - rescaleY(Number(d[4]))));
 
       // Update wick positions
       candles
         .selectAll('line')
-        .attr('x1', function (d) {
-          const datum = d as unknown as BybitKline;
-          return rescaleX(new Date(Number(datum[0]))) + 2;
-        })
-        .attr('x2', function (d) {
-          const datum = d as unknown as BybitKline;
-          return rescaleX(new Date(Number(datum[0]))) + 2;
-        })
-        .attr('y1', function (d) {
-          const datum = d as unknown as BybitKline;
-          return rescaleY(Number(datum[3]));
-        })
-        .attr('y2', function (d) {
-          const datum = d as unknown as BybitKline;
-          return rescaleY(Number(datum[2]));
-        });
+        .attr('x1', (d: any) => rescaleX(new Date(Number(d[0]))) + 2)
+        .attr('x2', (d: any) => rescaleX(new Date(Number(d[0]))) + 2)
+        .attr('y1', (d: any) => rescaleY(Number(d[3])))
+        .attr('y2', (d: any) => rescaleY(Number(d[2])));
     });
 
     svg.call(zoom as any);
