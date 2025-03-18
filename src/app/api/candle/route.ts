@@ -1,40 +1,30 @@
 import { NextResponse } from 'next/server';
+import { KlineIntervalV3 } from "bybit-api";
+import { bybitClient } from '@/lib/bybit';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') || 'spot';
-    const symbol = searchParams.get('symbol') || 'BTCUSDT';
-    const interval = searchParams.get('interval') || '1';
+    const category = (searchParams.get('category') || 'inverse') as 'inverse' | 'spot' | 'linear';
+    const symbol = searchParams.get('symbol') || 'BTCUSD';
+    const interval = (searchParams.get('interval') || '60') as KlineIntervalV3;
     const limit = searchParams.get('limit') || '200';
 
     // Calculate end time (current time)
-    const end = Math.floor(Date.now() / 1000);
+    const end = Date.now();
     // Calculate start time based on interval and limit
     const intervalMinutes = parseInt(interval);
-    const start = end - (intervalMinutes * 60 * parseInt(limit));
+    const start = end - (intervalMinutes * 60 * 1000 * parseInt(limit));
 
-    const baseUrl = 'https://api.bybit.com/v5/market/kline';
-    const queryParams = new URLSearchParams({
+    const response = await bybitClient.getKline({
       category,
       symbol,
       interval,
-      limit,
-      start: start.toString(),
-      end: end.toString(),
+      start,
+      end,
     });
 
-    const response = await fetch(`${baseUrl}?${queryParams.toString()}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: data.msg || 'Failed to fetch kline data' },
-        { status: response.status }
-      );
-    }
-
-    return NextResponse.json(data);
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching kline data:', error);
     return NextResponse.json(

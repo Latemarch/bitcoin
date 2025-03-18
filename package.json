@@ -12,6 +12,7 @@
     "@prisma/client": "^5.17.0",
     "axios": "^1.7.2",
     "bybit-api": "^3.11.0",
+    "d3": "^7.9.0",
     "echarts": "^5.5.1",
     "echarts-for-react": "^3.0.2",
     "next": "14.2.5",
@@ -19,12 +20,14 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8",
+    "prettier": "^3.5.3",
     "prisma": "^5.17.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"

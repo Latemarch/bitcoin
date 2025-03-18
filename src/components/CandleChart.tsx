@@ -1,227 +1,82 @@
-"use client";
-import React, { useEffect, useRef } from "react";
-import * as echarts from "echarts";
-import axios from "axios";
-import ReactECharts from "echarts-for-react";
+'use client';
 
-const ROOT_PATH = "https://echarts.apache.org/examples";
+import { BybitKline } from '@/types/type';
+import * as React from 'react';
+import * as d3 from 'd3';
+type Props = {
+  data: BybitKline[];
+  width: number;
+  height: number;
+};
 
-type EChartsOption = echarts.EChartsOption;
+export default function CandleChart({ data, width = 1000, height = 500 }: Props) {
+  const svgRef = React.useRef<SVGSVGElement>(null);
 
-interface RawData {
-  values: number[][];
-  categoryData: string[];
-  volumes: number[][];
-}
+  React.useEffect(() => {
+    if (!svgRef.current || !data) return;
+    const svg = d3
+      .select(svgRef.current)
+      .style('border', '3px solid steelblue')
+      .attr('viewBox', `-40 -20 ${width + 40} ${height + 50}`);
 
-function splitData(rawData: number[][]): RawData {
-  let categoryData: string[] = [];
-  let values: number[][] = [];
-  let volumes: number[][] = [];
-  for (let i = 0; i < rawData.length; i++) {
-    categoryData.push(rawData[i].splice(0, 1)[0] as any);
-    values.push(rawData[i]);
-    volumes.push([i, rawData[i][4], rawData[i][0] > rawData[i][1] ? 1 : -1]);
-  }
-  return {
-    categoryData: categoryData,
-    values: values,
-    volumes: volumes,
-  };
-}
+    const localMax = Number(d3.max(data, (d) => d[2])) + 10; // high
+    const localMin = Number(d3.min(data, (d) => d[3])) - 10; // low
 
-function calculateMA(dayCount: number, data: RawData): Array<number | string> {
-  var result: (number | string)[] = [];
-  for (var i = 0, len = data.values.length; i < len; i++) {
-    if (i < dayCount) {
-      result.push("-");
-      continue;
-    }
-    var sum = 0;
-    for (var j = 0; j < dayCount; j++) {
-      sum += data.values[i - j][1];
-    }
-    result.push(+(sum / dayCount).toFixed(3));
-  }
-  return result;
-}
+    const x = d3
+      .scaleTime()
+      .domain([new Date(Number(data[data.length - 1][0])), new Date(Number(data[0][0]))])
+      .range([0, width]);
+    const y = d3.scaleLinear().domain([localMin, localMax]).range([height, 0]);
 
-export default function CandleChart() {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const [option, setOption] = React.useState();
+    const xAxis = d3.axisBottom(x).ticks(10);
+    const yAxis = d3.axisLeft(y).ticks(5);
+    const xAxisGroup = svg
+      .append('g')
+      .attr('class', 'x-axis')
+      .attr('transform', `translate(0, ${height})`)
+      .call(xAxis);
+    const yAxisGroup = svg.append('g').attr('class', 'y-axis').call(yAxis);
+    const candles = svg.append('g').attr('class', 'candles');
 
-  useEffect(() => {
-    const chartDom = chartRef.current!;
+    // Then draw the candle bodies (rectangles)
+    candles
+      .selectAll('rect')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('x', (d) => x(new Date(Number(d[0]))))
+      .attr('y', (d) => y(Math.max(Number(d[1]), Number(d[4])))) // y position should be the higher of open/close
+      .attr('width', 4)
+      .attr('height', (d) => {
+        const openPrice = Number(d[1]);
+        const closePrice = Number(d[4]);
+        return Math.abs(y(openPrice) - y(closePrice));
+      })
+      .attr('fill', (d) => (Number(d[1]) > Number(d[4]) ? 'red' : 'green'));
 
-    axios
-      .get(`${ROOT_PATH}/data/asset/data/stock-DJI.json`)
-      .then((response) => {
-        const rawData = response.data;
-        const data = splitData(rawData);
+    candles
+      .selectAll('line')
+      .data(data)
+      .enter()
+      .append('line')
+      .attr('x1', (d) => x(new Date(Number(d[0]))) + 2)
+      .attr('y1', (d) => y(Number(d[3]))) // low
+      .attr('x2', (d) => x(new Date(Number(d[0]))) + 2)
+      .attr('y2', (d) => y(Number(d[2]))) // high
+      .attr('stroke', (d) => (Number(d[1]) > Number(d[4]) ? 'red' : 'green'))
+      .attr('stroke-width', 1);
 
-        let option: EChartsOption;
-        option = {
-          animation: false,
-          legend: {
-            bottom: 10,
-            left: "center",
-            data: ["Dow-Jones index", "MA5", "MA10", "MA20", "MA30"],
-          },
-          tooltip: {
-            trigger: "axis",
-            axisPointer: { type: "cross" },
-            borderWidth: 1,
-            borderColor: "#ccc",
-            padding: 10,
-            textStyle: { color: "#000" },
-            position: function (pos, params, el, elRect, size) {
-              const obj: Record<string, number> = { top: 10 };
-              obj[["left", "right"][+(pos[0] < size.viewSize[0] / 2)]] = 30;
-              return obj;
-            },
-          },
-          axisPointer: {
-            link: [{ xAxisIndex: "all" }],
-            label: { backgroundColor: "#777" },
-          },
-          toolbox: {
-            feature: {
-              dataZoom: { yAxisIndex: false },
-              brush: { type: ["lineX", "clear"] },
-            },
-          },
-          brush: {
-            xAxisIndex: "all",
-            brushLink: "all",
-            outOfBrush: { colorAlpha: 0.1 },
-          },
-          visualMap: {
-            show: false,
-            seriesIndex: 5,
-            dimension: 2,
-            pieces: [
-              { value: 1, color: "#ec0000" },
-              { value: -1, color: "#00da3c" },
-            ],
-          },
-          grid: [
-            { left: "10%", right: "8%", height: "50%" },
-            { left: "10%", right: "8%", top: "63%", height: "16%" },
-          ],
-          xAxis: [
-            {
-              type: "category",
-              data: data.categoryData,
-              boundaryGap: false,
-              axisLine: { onZero: false },
-              splitLine: { show: false },
-              min: "dataMin",
-              max: "dataMax",
-              axisPointer: { z: 100 },
-            },
-            {
-              type: "category",
-              gridIndex: 1,
-              data: data.categoryData,
-              boundaryGap: false,
-              axisLine: { onZero: false },
-              axisTick: { show: false },
-              splitLine: { show: false },
-              axisLabel: { show: false },
-              min: "dataMin",
-              max: "dataMax",
-            },
-          ],
-          yAxis: [
-            {
-              scale: true,
-              splitArea: { show: true },
-            },
-            {
-              scale: true,
-              gridIndex: 1,
-              splitNumber: 2,
-              axisLabel: { show: false },
-              axisLine: { show: false },
-              axisTick: { show: false },
-              splitLine: { show: false },
-            },
-          ],
-          dataZoom: [
-            { type: "inside", xAxisIndex: [0, 1], start: 98, end: 100 },
-            {
-              show: true,
-              xAxisIndex: [0, 1],
-              type: "slider",
-              top: "85%",
-              start: 98,
-              end: 100,
-            },
-          ],
-          series: [
-            {
-              name: "Dow-Jones index",
-              type: "candlestick",
-              data: data.values,
-              itemStyle: {
-                color: "#00da3c",
-                color0: "#ec0000",
-                borderColor: "#008F28",
-                borderColor0: "#8A0000",
-              },
-            },
-            {
-              name: "MA5",
-              type: "line",
-              data: calculateMA(5, data),
-              smooth: true,
-              lineStyle: { opacity: 0.5 },
-            },
-            {
-              name: "MA10",
-              type: "line",
-              data: calculateMA(10, data),
-              smooth: true,
-              lineStyle: { opacity: 0.5 },
-            },
-            {
-              name: "MA20",
-              type: "line",
-              data: calculateMA(20, data),
-              smooth: true,
-              lineStyle: { opacity: 0.5 },
-            },
-            {
-              name: "MA30",
-              type: "line",
-              data: calculateMA(30, data),
-              smooth: true,
-              lineStyle: { opacity: 0.5 },
-            },
-            {
-              name: "Volume",
-              type: "bar",
-              xAxisIndex: 1,
-              yAxisIndex: 1,
-              data: data.volumes,
-            },
-          ],
-        };
-        setOption(option as any);
-      });
-  }, []);
+    return function cleanup() {
+      if (svgRef.current) {
+        const svg = d3.select(svgRef.current);
+        svg.selectAll('*').remove();
+      }
+    };
+  }, [data, width, height]);
 
   return (
-    <div>
-      {option && (
-        <ReactECharts
-          // ref={chartRef}
-          style={{ height: "calc(100% - 20px)", width: "100%" }}
-          option={option}
-          theme={"dark"}
-          opts={{ renderer: "svg" }}
-        />
-      )}
+    <div className="w-full h-full bg-blue-200">
+      <svg ref={svgRef} />
     </div>
   );
 }

@@ -30,6 +30,7 @@ export default function WebsocketBybit() {
     });
 
     return () => {
+      //@ts-ignore
       ws.close();
     };
   }, []);
