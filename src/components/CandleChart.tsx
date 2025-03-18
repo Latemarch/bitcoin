@@ -66,6 +66,67 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       .attr('stroke', (d) => (Number(d[1]) > Number(d[4]) ? 'red' : 'green'))
       .attr('stroke-width', 1);
 
+    const zoom = d3.zoom().on('zoom', ({ transform }) => {
+      const rescaleX = transform.rescaleX(x);
+      xAxisGroup.call(xAxis.scale(rescaleX));
+
+      // Get visible domain
+      const visibleDomain = rescaleX.domain();
+
+      // Filter data points within visible domain
+      const visibleData = data.filter((d) => {
+        const date = new Date(Number(d[0]));
+        return date >= visibleDomain[0] && date <= visibleDomain[1];
+      });
+
+      // Recalculate y scale based on visible data
+      const visibleMax = Number(d3.max(visibleData, (d) => d[2])) + 10;
+      const visibleMin = Number(d3.min(visibleData, (d) => d[3])) - 10;
+      const rescaleY = d3.scaleLinear().domain([visibleMin, visibleMax]).range([height, 0]);
+
+      // Update y axis
+      yAxisGroup.call(yAxis.scale(rescaleY));
+
+      // Update candle positions and heights
+      candles
+        .selectAll('rect')
+        .attr('x', function (d) {
+          const datum = d as unknown as BybitKline;
+          return rescaleX(new Date(Number(datum[0])));
+        })
+        .attr('y', function (d) {
+          const datum = d as unknown as BybitKline;
+          return rescaleY(Math.max(Number(datum[1]), Number(datum[4])));
+        })
+        .attr('height', function (d) {
+          const datum = d as unknown as BybitKline;
+          const openPrice = Number(datum[1]);
+          const closePrice = Number(datum[4]);
+          return Math.abs(rescaleY(openPrice) - rescaleY(closePrice));
+        });
+
+      // Update wick positions
+      candles
+        .selectAll('line')
+        .attr('x1', function (d) {
+          const datum = d as unknown as BybitKline;
+          return rescaleX(new Date(Number(datum[0]))) + 2;
+        })
+        .attr('x2', function (d) {
+          const datum = d as unknown as BybitKline;
+          return rescaleX(new Date(Number(datum[0]))) + 2;
+        })
+        .attr('y1', function (d) {
+          const datum = d as unknown as BybitKline;
+          return rescaleY(Number(datum[3]));
+        })
+        .attr('y2', function (d) {
+          const datum = d as unknown as BybitKline;
+          return rescaleY(Number(datum[2]));
+        });
+    });
+
+    svg.call(zoom as any);
     return function cleanup() {
       if (svgRef.current) {
         const svg = d3.select(svgRef.current);
