@@ -25,7 +25,8 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
 
     const x = d3
       .scaleTime()
-      .domain([new Date(Number(data[data.length - 1][0])), new Date(Number(data[0][0]))])
+      // .domain([new Date(Number(data[data.length - 1][0])), new Date(Number(data[0][0]))])
+      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
       .range([0, width]);
     const xIndex = d3
       .scaleLinear()
@@ -62,7 +63,7 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
     const candles = svg.append('g').attr('class', 'candles').attr('clip-path', 'url(#chart-area)');
 
     // Then draw the candle bodies (rectangles)
-    const candleWidth = (x(new Date(Number(data[0][0]))) - x(new Date(Number(data[1][0])))) * 0.9;
+    const candleWidth = (x(new Date(Number(data[1][0]))) - x(new Date(Number(data[0][0])))) * 0.9;
 
     candles
       .selectAll('rect')
@@ -91,7 +92,7 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       .attr('stroke', (d) => (d[1] > d[4] ? '#EF454A' : '#1EB26B'))
       .attr('stroke-width', 1.5);
 
-      const circle = svg.append('circle').attr('r', 4)
+    const circle = svg.append('circle').attr('r', 0).attr('fill', 'red');
     const listeningRect = svg
       .append('rect')
       .attr('width', width)
@@ -106,16 +107,18 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       const d0 = data[i];
       const d1 = data[i + 1];
       const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
-      const xPos = x(d.index);
+      const xPos = x(d[0]);
       const yPos = y(d[1]);
+      console.log(i, xPos, yPos);
       // const tooltip = d3.select(".tooltip");
       // tooltip.style("left", `${xPos}px`).style("top", `${yPos}px`);
-        circle.attr("cx", xPos).attr("cy", yPos).attr("r", 10);
+      circle.attr('cx', xPos).attr('cy', yPos).attr('r', 10);
       // setCurrentIndex(d.index);
     });
 
     const handleZoom = ({ transform }: any) => {
       const rescaleX = transform.rescaleX(x);
+      const rescaleXIndex = transform.rescaleX(xIndex);
       xAxisGroup.call(xAxis.scale(rescaleX));
 
       // Get visible domain
@@ -150,6 +153,22 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
         .attr('x2', (d: any) => rescaleX(new Date(d[0])))
         .attr('y1', (d: any) => rescaleY(d[3]))
         .attr('y2', (d: any) => rescaleY(d[2]));
+
+      listeningRect.on('mousemove', (e) => {
+        const [xCoord] = d3.pointer(e);
+        const bisectDate = d3.bisector((d: any) => d.index).left; // right 대신 left 사용
+        const x0 = rescaleXIndex.invert(xCoord);
+        const i = bisectDate(data, x0);
+        const d0 = data[i];
+        const d1 = data[i + 1];
+        const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
+        const xPos = rescaleX(d[0]);
+        const yPos = rescaleY(d[4]);
+        // const tooltip = d3.select(".tooltip");
+        // tooltip.style("left", `${xPos}px`).style("top", `${yPos}px`);
+        circle.attr('cx', xPos).attr('cy', yPos).attr('r', 10);
+        // setCurrentIndex(d.index);
+      });
     };
 
     const zoom = d3

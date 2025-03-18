@@ -5,7 +5,7 @@ export default async function CandleChartContainer() {
   // const data = await fetch('http://localhost:3000/api/candle?interval=1').then((res) => res.json());
   // saveJson(data, 'data.json');
   const data = getData('data.json');
-  const numData = data.result.list.map((d: BybitKline, index: number) => ({
+  const numData = data.result.list.reverse().map((d: BybitKline, index: number) => ({
     0: Number(d[0]),
     1: Number(d[1]),
     2: Number(d[2]),
