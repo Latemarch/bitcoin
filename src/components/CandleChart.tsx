@@ -11,6 +11,7 @@ type Props = {
 
 export default function CandleChart({ data, width = 1000, height = 500 }: Props) {
   const svgRef = React.useRef<SVGSVGElement>(null);
+  console.log(data);
 
   React.useEffect(() => {
     if (!svgRef.current || !data) return;
@@ -26,47 +27,94 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       .scaleTime()
       .domain([new Date(Number(data[data.length - 1][0])), new Date(Number(data[0][0]))])
       .range([0, width]);
+    const xIndex = d3
+      .scaleLinear()
+      .domain([0, data.length - 1])
+      .range([0, width]);
     const y = d3.scaleLinear().domain([localMin, localMax]).range([height, 0]);
 
-    const xAxis = d3.axisBottom(x).ticks(10);
-    const yAxis = d3.axisLeft(y).ticks(5);
+    const xAxis = d3.axisBottom(x).ticks(10).tickSizeInner(-height);
+    const yAxis = d3.axisLeft(y).ticks(10).tickSizeInner(-width);
+
     const xAxisGroup = svg
       .append('g')
       .attr('class', 'x-axis')
       .attr('transform', `translate(0, ${height})`)
-      .call(xAxis);
-    const yAxisGroup = svg.append('g').attr('class', 'y-axis').call(yAxis);
-    const candles = svg.append('g').attr('class', 'candles');
+      .call(xAxis)
+      .style('color', '#71757A');
+    const yAxisGroup = svg
+      .append('g')
+      .attr('class', 'y-axis')
+      .call(yAxis)
+      .style('color', '#71757A');
+
+    svg.selectAll('.tick line').style('stroke', '#71757A').style('stroke-width', 0.2);
+
+    // Create clip path
+    svg
+      .append('defs')
+      .append('clipPath')
+      .attr('id', 'chart-area')
+      .append('rect')
+      .attr('width', width)
+      .attr('height', height);
+
+    const candles = svg.append('g').attr('class', 'candles').attr('clip-path', 'url(#chart-area)');
 
     // Then draw the candle bodies (rectangles)
+    const candleWidth = (x(new Date(Number(data[0][0]))) - x(new Date(Number(data[1][0])))) * 0.9;
+
     candles
       .selectAll('rect')
       .data(data)
       .enter()
       .append('rect')
-      .attr('x', (d) => x(new Date(Number(d[0]))))
-      .attr('y', (d) => y(Math.max(Number(d[1]), Number(d[4])))) // y position should be the higher of open/close
-      .attr('width', 4)
+      .attr('x', (d) => x(new Date(d[0])) - candleWidth / 2)
+      .attr('y', (d) => y(Math.max(d[1], d[4]))) // y position should be the higher of open/close
+      .attr('width', candleWidth)
       .attr('height', (d) => {
-        const openPrice = Number(d[1]);
-        const closePrice = Number(d[4]);
+        const openPrice = d[1];
+        const closePrice = d[4];
         return Math.abs(y(openPrice) - y(closePrice));
       })
-      .attr('fill', (d) => (Number(d[1]) > Number(d[4]) ? 'red' : 'green'));
+      .attr('fill', (d) => (d[1] > d[4] ? '#EF454A' : '#1EB26B'));
 
     candles
       .selectAll('line')
       .data(data)
       .enter()
       .append('line')
-      .attr('x1', (d) => x(new Date(Number(d[0]))) + 2)
-      .attr('y1', (d) => y(Number(d[3]))) // low
-      .attr('x2', (d) => x(new Date(Number(d[0]))) + 2)
-      .attr('y2', (d) => y(Number(d[2]))) // high
-      .attr('stroke', (d) => (Number(d[1]) > Number(d[4]) ? 'red' : 'green'))
-      .attr('stroke-width', 1);
+      .attr('x1', (d) => x(new Date(d[0])))
+      .attr('y1', (d) => y(d[3])) // low
+      .attr('x2', (d) => x(new Date(d[0])))
+      .attr('y2', (d) => y(d[2])) // high
+      .attr('stroke', (d) => (d[1] > d[4] ? '#EF454A' : '#1EB26B'))
+      .attr('stroke-width', 1.5);
 
-    const zoom = d3.zoom().on('zoom', ({ transform }) => {
+      const circle = svg.append('circle').attr('r', 4)
+    const listeningRect = svg
+      .append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', 'white')
+      .attr('opacity', 0);
+    listeningRect.on('mousemove', (e) => {
+      const [xCoord] = d3.pointer(e);
+      const bisectDate = d3.bisector((d: any) => d.index).left; // right 대신 left 사용
+      const x0 = xIndex.invert(xCoord);
+      const i = bisectDate(data, x0);
+      const d0 = data[i];
+      const d1 = data[i + 1];
+      const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
+      const xPos = x(d.index);
+      const yPos = y(d[1]);
+      // const tooltip = d3.select(".tooltip");
+      // tooltip.style("left", `${xPos}px`).style("top", `${yPos}px`);
+        circle.attr("cx", xPos).attr("cy", yPos).attr("r", 10);
+      // setCurrentIndex(d.index);
+    });
+
+    const handleZoom = ({ transform }: any) => {
       const rescaleX = transform.rescaleX(x);
       xAxisGroup.call(xAxis.scale(rescaleX));
 
@@ -75,7 +123,7 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
 
       // Filter data points within visible domain
       const visibleData = data.filter((d) => {
-        const date = new Date(Number(d[0]));
+        const date = new Date(d[0]);
         return date >= visibleDomain[0] && date <= visibleDomain[1];
       });
 
@@ -90,18 +138,28 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       // Update candle positions and heights
       candles
         .selectAll('rect')
-        .attr('x', (d: any) => rescaleX(new Date(Number(d[0]))))
-        .attr('y', (d: any) => rescaleY(Math.max(Number(d[1]), Number(d[4]))))
-        .attr('height', (d: any) => Math.abs(rescaleY(Number(d[1])) - rescaleY(Number(d[4]))));
+        .attr('x', (d: any) => rescaleX(new Date(d[0])) - (candleWidth * transform.k) / 2)
+        .attr('y', (d: any) => rescaleY(Math.max(d[1], d[4])))
+        .attr('height', (d: any) => Math.abs(rescaleY(d[1]) - rescaleY(d[4])))
+        .attr('width', candleWidth * transform.k);
 
       // Update wick positions
       candles
         .selectAll('line')
-        .attr('x1', (d: any) => rescaleX(new Date(Number(d[0]))) + 2)
-        .attr('x2', (d: any) => rescaleX(new Date(Number(d[0]))) + 2)
-        .attr('y1', (d: any) => rescaleY(Number(d[3])))
-        .attr('y2', (d: any) => rescaleY(Number(d[2])));
-    });
+        .attr('x1', (d: any) => rescaleX(new Date(d[0])))
+        .attr('x2', (d: any) => rescaleX(new Date(d[0])))
+        .attr('y1', (d: any) => rescaleY(d[3]))
+        .attr('y2', (d: any) => rescaleY(d[2]));
+    };
+
+    const zoom = d3
+      .zoom()
+      .scaleExtent([1, 10]) // 최대 10배까지 확대 가능
+      .translateExtent([
+        [-100, 0],
+        [1100, height],
+      ])
+      .on('zoom', handleZoom);
 
     svg.call(zoom as any);
     return function cleanup() {
@@ -113,7 +171,7 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
   }, [data, width, height]);
 
   return (
-    <div className="w-full h-full bg-blue-200">
+    <div className="w-full h-full bg-bgPrimary">
       <svg ref={svgRef} />
     </div>
   );
