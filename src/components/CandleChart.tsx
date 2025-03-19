@@ -5,9 +5,13 @@ import * as React from 'react';
 import * as d3 from 'd3';
 import {
   colors,
+  createBaseLine,
   createCandles,
   createGuideLines,
   createIndicators,
+  updateAxis,
+  updateCandles,
+  updateGuideLines,
   writeCandleInfo,
 } from '@/lib/D3/candlesChart';
 type Props = {
@@ -61,53 +65,32 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       .append('g')
       .attr('class', 'y-volume-axis')
       .attr('transform', `translate(${width}, 0)`)
-      .call(yVolumeAxis)
       .style('color', gray);
 
     const xAxisGroup = svg
       .append('g')
       .attr('class', 'x-axis')
       .attr('transform', `translate(0, ${height})`)
-      .call(xAxis)
       .style('color', gray);
     const yAxisGroup = svg
       .append('g')
       .attr('class', 'y-axis')
       .attr('transform', `translate(${width}, 0)`)
-      .call(yAxis)
       .style('color', gray);
-    xAxisGroup.selectAll('path').remove();
-    yAxisGroup.selectAll('path').remove();
-    yVolumeAxisGroup.selectAll('path').remove();
+    // .call(yAxis)
 
-    svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
-    svg.selectAll('.tick text').style('font-size', '14px');
+    updateAxis({
+      svg,
+      xAxisGroup,
+      yAxisGroup,
+      yVolumeAxisGroup,
+      xAxis,
+      yAxis,
+      yVolumeAxis,
+    });
 
-    const baseLineX = svg
-      .append('line')
-      .attr('x1', 0)
-      .attr('y1', height)
-      .attr('x2', width * 2)
-      .attr('y2', height)
-      .style('stroke', 'white')
-      .style('stroke-width', 1);
-    const splitLineX = svg
-      .append('line')
-      .attr('x1', 0)
-      .attr('y1', height * candleChartHeightRatio)
-      .attr('x2', width * 2)
-      .attr('y2', height * candleChartHeightRatio)
-      .style('stroke', 'white')
-      .style('stroke-width', 1);
+    const { splitLineX } = createBaseLine(svg, width, height, candleChartHeightRatio);
 
-    const baseLineY = svg
-      .append('line')
-      .attr('x1', width)
-      .attr('y1', 0)
-      .attr('x2', width)
-      .attr('y2', height)
-      .style('stroke', 'white')
-      .style('stroke-width', 1);
     // Create clip path
     svg
       .append('defs')
@@ -191,20 +174,8 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
           })
           .replace(',', '')
       );
-      // Update guide lines
-      verticalLine
-        .attr('x1', xPos)
-        .attr('y1', 0)
-        .attr('x2', xPos)
-        .attr('y2', height)
-        .attr('opacity', 1);
 
-      horizontalLine
-        .attr('x1', 0)
-        .attr('y1', yPos)
-        .attr('x2', width)
-        .attr('y2', yPos)
-        .attr('opacity', 1);
+      updateGuideLines({ svg, xPos, yPos, width, height });
     });
 
     listeningRect.on('mouseleave', () => {
@@ -218,10 +189,6 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
     const handleZoom = ({ transform }: any) => {
       const rescaleX = transform.rescaleX(x);
       const rescaleXIndex = transform.rescaleX(xIndex);
-
-      // Update x axis with new scale while maintaining styles
-      xAxisGroup.call(xAxis.scale(rescaleX));
-      xAxisGroup.style('color', gray);
 
       // Get visible domain
       const visibleDomain = rescaleX.domain();
@@ -243,32 +210,27 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
         .range([height * candleChartHeightRatio, 0]);
 
       // Update y axis
-      yAxisGroup.call(yAxis.scale(rescaleY));
       const rescaleYVolume = d3
         .scaleLinear()
         .domain([0, visibleVolumeMax])
         .range([height, height * candleChartHeightRatio + 4]);
-      yVolumeAxisGroup.call(yVolumeAxis.scale(rescaleYVolume));
-      xAxisGroup.selectAll('path').remove();
-      yAxisGroup.selectAll('path').remove();
-      yVolumeAxisGroup.selectAll('path').remove();
-      svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
-      svg.selectAll('.tick text').style('font-size', '14px');
-      // Update candle positions and heights
-      candles
-        .selectAll('rect')
-        .attr('x', (d: any) => rescaleX(new Date(d[0])) - (candleWidth * transform.k) / 2)
-        .attr('y', (d: any) => rescaleY(Math.max(d[1], d[4])))
-        .attr('height', (d: any) => Math.abs(rescaleY(d[1]) - rescaleY(d[4])))
-        .attr('width', candleWidth * transform.k);
 
-      // Update wick positions
-      candles
-        .selectAll('line')
-        .attr('x1', (d: any) => rescaleX(new Date(d[0])))
-        .attr('x2', (d: any) => rescaleX(new Date(d[0])))
-        .attr('y1', (d: any) => rescaleY(d[3]))
-        .attr('y2', (d: any) => rescaleY(d[2]));
+      updateAxis({
+        svg,
+        xAxisGroup,
+        yAxisGroup,
+        yVolumeAxisGroup,
+        xAxis,
+        yAxis,
+        yVolumeAxis,
+      });
+      // Update candle positions and heights
+      updateCandles({
+        candles,
+        x: rescaleX,
+        y: rescaleY,
+        candleWidth: candleWidth * transform.k,
+      });
 
       volumeGroup
         .selectAll('rect')
@@ -286,11 +248,12 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
         const d0 = data[i - 1];
         const d1 = data[i];
         const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
-        console.log(x0, d0.index, d1.index, x0 < (d0.index + d1.index) / 2);
         const xPos = rescaleX(d[0]);
         const yPos = yCoord;
 
+        updateGuideLines({ svg, xPos, yPos, width, height });
         candleInfo.call((text) => writeCandleInfo(text, d));
+
         priceIndicator.attr('transform', `translate(${width}, ${yPos - 5})`);
         const indicatorText =
           yCoord < height * candleChartHeightRatio
@@ -311,21 +274,6 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
             })
             .replace(',', '')
         );
-
-        // Update guide lines with zoomed coordinates
-        verticalLine
-          .attr('x1', xPos)
-          .attr('y1', 0)
-          .attr('x2', xPos)
-          .attr('y2', height)
-          .attr('opacity', 1);
-
-        horizontalLine
-          .attr('x1', 0)
-          .attr('y1', yPos)
-          .attr('x2', width)
-          .attr('y2', yPos)
-          .attr('opacity', 1);
       });
     };
 

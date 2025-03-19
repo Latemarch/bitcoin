@@ -11,14 +11,6 @@ export function createCandles(svg: any, data: BybitKline[], x: any, y: any) {
     .data(data)
     .enter()
     .append('rect')
-    .attr('x', (d: BybitKline) => x(new Date(d[0])) - candleWidth / 2)
-    .attr('y', (d: BybitKline) => y(Math.max(d[1], d[4]))) // y position should be the higher of open/close
-    .attr('width', candleWidth)
-    .attr('height', (d: BybitKline) => {
-      const openPrice = d[1];
-      const closePrice = d[4];
-      return Math.max(Math.abs(y(openPrice) - y(closePrice)), 1);
-    })
     .attr('fill', (d: BybitKline) => (d[1] > d[4] ? '#EF454A' : '#1EB26B'));
 
   candles
@@ -26,19 +18,33 @@ export function createCandles(svg: any, data: BybitKline[], x: any, y: any) {
     .data(data)
     .enter()
     .append('line')
-    .attr('x1', (d: BybitKline) => x(new Date(d[0])))
-    .attr('y1', (d: BybitKline) => y(d[3])) // low
-    .attr('x2', (d: BybitKline) => x(new Date(d[0])))
-    .attr('y2', (d: BybitKline) => y(d[2])) // high
     .attr('stroke', (d: BybitKline) => (d[1] > d[4] ? '#EF454A' : '#1EB26B'))
     .attr('stroke-width', 1.5);
+
+  updateCandles({ candles, x, y, candleWidth });
   return { candles, candleWidth };
+}
+export function updateCandles({ candles, x, y, candleWidth }: any) {
+  candles
+    .selectAll('rect')
+    .attr('x', (d: any) => x(new Date(d[0])) - candleWidth / 2)
+    .attr('y', (d: any) => y(Math.max(d[1], d[4])))
+    .attr('height', (d: any) => Math.max(Math.abs(y(d[1]) - y(d[4])), 1))
+    .attr('width', candleWidth);
+
+  // Update wick positions
+  candles
+    .selectAll('line')
+    .attr('x1', (d: any) => x(new Date(d[0])))
+    .attr('x2', (d: any) => x(new Date(d[0])))
+    .attr('y1', (d: any) => y(d[3]))
+    .attr('y2', (d: any) => y(d[2]));
 }
 
 export function createGuideLines(svg: any) {
   const verticalLine = svg
     .append('line')
-    .attr('class', 'guide-line')
+    .attr('class', 'guide-vertical-line')
     .attr('stroke', colors.gray)
     .attr('stroke-width', 1)
     .attr('stroke-dasharray', '4,4')
@@ -46,13 +52,30 @@ export function createGuideLines(svg: any) {
 
   const horizontalLine = svg
     .append('line')
-    .attr('class', 'guide-line')
+    .attr('class', 'guide-horizontal-line')
     .attr('stroke', colors.gray)
     .attr('stroke-width', 1)
     .attr('stroke-dasharray', '4,4')
     .attr('opacity', 0);
 
   return { verticalLine, horizontalLine };
+}
+export function updateGuideLines({ svg, xPos, yPos, width, height }: any) {
+  svg
+    .select('.guide-vertical-line')
+    .attr('x1', xPos)
+    .attr('y1', 0)
+    .attr('x2', xPos)
+    .attr('y2', height)
+    .attr('opacity', 1);
+
+  svg
+    .select('.guide-horizontal-line')
+    .attr('x1', 0)
+    .attr('y1', yPos)
+    .attr('x2', width)
+    .attr('y2', yPos)
+    .attr('opacity', 1);
 }
 
 export function writeCandleInfo(text: any, d: BybitKline) {
@@ -122,3 +145,57 @@ export const colors = {
   green: '#1EB26B',
   gray: '#71757A',
 };
+
+export function updateAxis({
+  svg,
+  xAxisGroup,
+  yAxisGroup,
+  yVolumeAxisGroup,
+  xAxis,
+  yAxis,
+  yVolumeAxis,
+}: any) {
+  xAxisGroup.call(xAxis);
+  yAxisGroup.call(yAxis);
+  yVolumeAxisGroup.call(yVolumeAxis);
+  xAxisGroup.selectAll('path').remove();
+  yAxisGroup.selectAll('path').remove();
+  yVolumeAxisGroup.selectAll('path').remove();
+  svg.selectAll('.tick line').style('stroke', colors.gray).style('stroke-width', 0.2);
+  svg.selectAll('.tick text').style('font-size', '14px');
+}
+
+export function createBaseLine(
+  svg: any,
+  width: number,
+  height: number,
+  candleChartHeightRatio: number
+) {
+  const baseLineX = svg
+    .append('line')
+    .attr('x1', 0)
+    .attr('y1', height)
+    .attr('x2', width * 2)
+    .attr('y2', height)
+    .style('stroke', 'white')
+    .style('stroke-width', 1);
+  const splitLineX = svg
+    .append('line')
+    .attr('x1', 0)
+    .attr('y1', height * candleChartHeightRatio)
+    .attr('x2', width * 2)
+    .attr('y2', height * candleChartHeightRatio)
+    .style('stroke', 'white')
+    .style('stroke-width', 1);
+
+  const baseLineY = svg
+    .append('line')
+    .attr('x1', width)
+    .attr('y1', 0)
+    .attr('x2', width)
+    .attr('y2', height)
+    .style('stroke', 'white')
+    .style('stroke-width', 1);
+
+  return { baseLineX, splitLineX, baseLineY };
+}
