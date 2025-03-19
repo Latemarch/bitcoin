@@ -19,11 +19,10 @@ type Props = {
 export default function CandleChart({ data, width = 1000, height = 500 }: Props) {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const { gray, red, green } = colors;
-  console.log(data);
 
   React.useEffect(() => {
     if (!svgRef.current || !data) return;
-    let candleChartHeightRatio = 0.7;
+    let candleChartHeightRatio = 0.8;
     const svg = d3
       .select(svgRef.current)
       .style('border', '3px solid steelblue')
@@ -44,14 +43,26 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       .scaleLinear()
       .domain([localMin, localMax])
       .range([height * candleChartHeightRatio, 0]);
+
+    const volumeMax = Number(d3.max(data, (d) => d[5]));
     const yVolume = d3
       .scaleLinear()
-      .domain([0, 100])
-      .range([height * (1 - candleChartHeightRatio), 0]);
+      .domain([0, volumeMax])
+      .range([height, height * candleChartHeightRatio + 4]);
 
     const xAxis = d3.axisBottom(x).ticks(10).tickSizeInner(-height);
     const yAxis = d3.axisRight(y).ticks(10).tickSizeInner(-width);
-    const yVolumeAxis = d3.axisRight(yVolume).ticks(10).tickSizeInner(-width);
+    const yVolumeAxis = d3
+      .axisRight(yVolume)
+      .ticks(4)
+      .tickFormat((d) => (d === 0 ? '' : d.toString()))
+      .tickSizeInner(-width);
+    const yVolumeAxisGroup = svg
+      .append('g')
+      .attr('class', 'y-volume-axis')
+      .attr('transform', `translate(${width}, 0)`)
+      .call(yVolumeAxis)
+      .style('color', gray);
 
     const xAxisGroup = svg
       .append('g')
@@ -65,9 +76,38 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       .attr('transform', `translate(${width}, 0)`)
       .call(yAxis)
       .style('color', gray);
+    xAxisGroup.selectAll('path').remove();
+    yAxisGroup.selectAll('path').remove();
+    yVolumeAxisGroup.selectAll('path').remove();
 
     svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
     svg.selectAll('.tick text').style('font-size', '14px');
+
+    const baseLineX = svg
+      .append('line')
+      .attr('x1', 0)
+      .attr('y1', height)
+      .attr('x2', width * 2)
+      .attr('y2', height)
+      .style('stroke', 'white')
+      .style('stroke-width', 1);
+    const splitLineX = svg
+      .append('line')
+      .attr('x1', 0)
+      .attr('y1', height * candleChartHeightRatio)
+      .attr('x2', width * 2)
+      .attr('y2', height * candleChartHeightRatio)
+      .style('stroke', 'white')
+      .style('stroke-width', 1);
+
+    const baseLineY = svg
+      .append('line')
+      .attr('x1', width)
+      .attr('y1', 0)
+      .attr('x2', width)
+      .attr('y2', height)
+      .style('stroke', 'white')
+      .style('stroke-width', 1);
     // Create clip path
     svg
       .append('defs')
@@ -84,6 +124,25 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
     const rectWidth = 132;
     const { priceIndicator, dateIndicator } = createIndicators(svg, width, height, rectWidth);
 
+    const volumeGroup = svg
+      .append('g')
+      .attr('class', 'volume-group')
+      .attr('transform', `translate(0, 0)`)
+      .attr('clip-path', 'url(#chart-area)');
+
+    volumeGroup
+      .selectAll('rect')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('x', (d) => x(new Date(d[0])) - candleWidth / 2)
+      .attr('y', (d) => yVolume(d[5]))
+      .attr('width', candleWidth)
+      .attr('height', (d) => height - yVolume(d[5]))
+      .attr('fill', (d) => (d[1] > d[4] ? red : green))
+      .attr('opacity', 0.5);
+
+    // text on left-top
     const candleInfo = svg
       .append('text')
       .attr('class', 'candle-info')
@@ -105,15 +164,19 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       const bisectDate = d3.bisector((d: any) => d.index).left;
       const x0 = xIndex.invert(xCoord);
       const i = bisectDate(data, x0);
-      const d0 = data[i];
-      const d1 = data[i + 1];
+      const d0 = data[i - 1];
+      const d1 = data[i];
       const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
       const xPos = x(d[0]);
       const yPos = yCoord;
 
       candleInfo.call((text) => writeCandleInfo(text, d));
       priceIndicator.attr('transform', `translate(${width}, ${yPos - 5})`);
-      priceIndicator.select('text').text(y.invert(yCoord).toFixed(2));
+      const indicatorText =
+        yCoord < height * candleChartHeightRatio
+          ? y.invert(yCoord).toFixed(2)
+          : yVolume.invert(yCoord).toFixed(0);
+      priceIndicator.select('text').text(indicatorText);
       const dateIndicatorXPos = Math.max(xPos - rectWidth / 2, 0);
       dateIndicator.attr('transform', `translate(${dateIndicatorXPos}, ${height})`);
       dateIndicator.select('text').text(
@@ -155,7 +218,10 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
     const handleZoom = ({ transform }: any) => {
       const rescaleX = transform.rescaleX(x);
       const rescaleXIndex = transform.rescaleX(xIndex);
+
+      // Update x axis with new scale while maintaining styles
       xAxisGroup.call(xAxis.scale(rescaleX));
+      xAxisGroup.style('color', gray);
 
       // Get visible domain
       const visibleDomain = rescaleX.domain();
@@ -169,6 +235,8 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       // Recalculate y scale based on visible data
       const visibleMax = Number(d3.max(visibleData, (d) => d[2])) + 10;
       const visibleMin = Number(d3.min(visibleData, (d) => d[3])) - 10;
+      const visibleVolumeMax = Number(d3.max(visibleData, (d) => d[5]));
+
       const rescaleY = d3
         .scaleLinear()
         .domain([visibleMin, visibleMax])
@@ -176,7 +244,16 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
 
       // Update y axis
       yAxisGroup.call(yAxis.scale(rescaleY));
-
+      const rescaleYVolume = d3
+        .scaleLinear()
+        .domain([0, visibleVolumeMax])
+        .range([height, height * candleChartHeightRatio + 4]);
+      yVolumeAxisGroup.call(yVolumeAxis.scale(rescaleYVolume));
+      xAxisGroup.selectAll('path').remove();
+      yAxisGroup.selectAll('path').remove();
+      yVolumeAxisGroup.selectAll('path').remove();
+      svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
+      svg.selectAll('.tick text').style('font-size', '14px');
       // Update candle positions and heights
       candles
         .selectAll('rect')
@@ -193,20 +270,33 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
         .attr('y1', (d: any) => rescaleY(d[3]))
         .attr('y2', (d: any) => rescaleY(d[2]));
 
+      volumeGroup
+        .selectAll('rect')
+        .attr('x', (d: any) => rescaleX(new Date(d[0])) - (candleWidth * transform.k) / 2)
+        .attr('y', (d: any) => rescaleYVolume(d[5]))
+        .attr('width', candleWidth * transform.k)
+        .attr('height', (d: any) => height - rescaleYVolume(d[5]));
+
       svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
       listeningRect.on('mousemove', (e) => {
         const [xCoord, yCoord] = d3.pointer(e);
         const bisectDate = d3.bisector((d: any) => d.index).left;
         const x0 = rescaleXIndex.invert(xCoord);
         const i = bisectDate(data, x0);
-        const d0 = data[i];
-        const d1 = data[i + 1];
+        const d0 = data[i - 1];
+        const d1 = data[i];
         const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
+        console.log(x0, d0.index, d1.index, x0 < (d0.index + d1.index) / 2);
         const xPos = rescaleX(d[0]);
         const yPos = yCoord;
 
+        candleInfo.call((text) => writeCandleInfo(text, d));
         priceIndicator.attr('transform', `translate(${width}, ${yPos - 5})`);
-        priceIndicator.select('text').text(rescaleY.invert(yCoord).toFixed(2));
+        const indicatorText =
+          yCoord < height * candleChartHeightRatio
+            ? rescaleY.invert(yCoord).toFixed(2)
+            : yVolume.invert(yCoord).toFixed(0);
+        priceIndicator.select('text').text(indicatorText);
         const dateIndicatorXPos = Math.max(xPos - rectWidth / 2, 0);
         dateIndicator.attr('transform', `translate(${dateIndicatorXPos}, ${height})`);
         dateIndicator.select('text').text(

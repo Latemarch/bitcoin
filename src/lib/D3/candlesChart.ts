@@ -17,7 +17,7 @@ export function createCandles(svg: any, data: BybitKline[], x: any, y: any) {
     .attr('height', (d: BybitKline) => {
       const openPrice = d[1];
       const closePrice = d[4];
-      return Math.abs(y(openPrice) - y(closePrice));
+      return Math.max(Math.abs(y(openPrice) - y(closePrice)), 1);
     })
     .attr('fill', (d: BybitKline) => (d[1] > d[4] ? '#EF454A' : '#1EB26B'));
 
@@ -39,7 +39,7 @@ export function createGuideLines(svg: any) {
   const verticalLine = svg
     .append('line')
     .attr('class', 'guide-line')
-    .attr('stroke', '#71757A')
+    .attr('stroke', colors.gray)
     .attr('stroke-width', 1)
     .attr('stroke-dasharray', '4,4')
     .attr('opacity', 0);
@@ -47,7 +47,7 @@ export function createGuideLines(svg: any) {
   const horizontalLine = svg
     .append('line')
     .attr('class', 'guide-line')
-    .attr('stroke', '#71757A')
+    .attr('stroke', colors.gray)
     .attr('stroke-width', 1)
     .attr('stroke-dasharray', '4,4')
     .attr('opacity', 0);
@@ -75,7 +75,12 @@ export function writeCandleInfo(text: any, d: BybitKline) {
   text.append('tspan').text('C: ').style('fill', colors.gray);
   text
     .append('tspan')
-    .text(`${d[4].toFixed(1)}`)
+    .text(`${d[4].toFixed(1)} `)
+    .style('fill', d[1] > d[4] ? colors.red : colors.green);
+  text.append('tspan').text('V: ').style('fill', colors.gray);
+  text
+    .append('tspan')
+    .text(`${d[5].toFixed(1)}`)
     .style('fill', d[1] > d[4] ? colors.red : colors.green);
 }
 
@@ -84,16 +89,12 @@ export function createIndicators(svg: any, width: number, height: number, rectWi
     .append('g')
     .attr('class', 'price-indicator')
     .attr('transform', `translate(${width * 2}, 0)`);
-  priceIndicator
-    .append('rect')
-    .attr('width', 100)
-    .attr('height', 14)
-    .attr('fill', 'red')
-    .attr('opacity', 0.5);
+  priceIndicator.append('rect').attr('width', 100).attr('height', 14).attr('fill', '#282828');
+  // .attr('opacity', 0.5);
   priceIndicator
     .append('text')
-    .attr('x', 2)
-    .attr('y', 10)
+    .attr('x', 3)
+    .attr('y', 12)
     .text('100')
     .style('font-size', '14px')
     .style('fill', 'white')
@@ -103,12 +104,8 @@ export function createIndicators(svg: any, width: number, height: number, rectWi
     .append('g')
     .attr('class', 'date-indicator')
     .attr('transform', `translate(0, ${height * 2})`);
-  dateIndicator
-    .append('rect')
-    .attr('width', rectWidth)
-    .attr('height', 18)
-    .attr('fill', 'red')
-    .attr('opacity', 0.5);
+  dateIndicator.append('rect').attr('width', rectWidth).attr('height', 18).attr('fill', '#282828');
+  // .attr('opacity', 0.5);
   dateIndicator
     .append('text')
     .attr('x', 10)
