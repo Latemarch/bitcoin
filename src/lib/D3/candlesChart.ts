@@ -1,4 +1,5 @@
 import { BybitKline } from '@/types/type';
+import * as d3 from 'd3';
 
 export function createCandles(svg: any, data: BybitKline[], x: any, y: any) {
   const candles = svg.append('g').attr('class', 'candles').attr('clip-path', 'url(#chart-area)');
@@ -146,15 +147,35 @@ export const colors = {
   gray: '#71757A',
 };
 
+type Props = {
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  x: d3.ScaleTime<number, number, never>;
+  y: d3.ScaleLinear<number, number, never>;
+  yVolume: d3.ScaleLinear<number, number, never>;
+  width: number;
+  height: number;
+  xAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
+  yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
+  yVolumeAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
+};
 export function updateAxis({
   svg,
+  x,
+  y,
+  yVolume,
+  width,
+  height,
   xAxisGroup,
   yAxisGroup,
   yVolumeAxisGroup,
-  xAxis,
-  yAxis,
-  yVolumeAxis,
-}: any) {
+}: Props) {
+  const xAxis = d3.axisBottom(x).ticks(10).tickSizeInner(-height);
+  const yAxis = d3.axisRight(y).ticks(10).tickSizeInner(-width);
+  const yVolumeAxis = d3
+    .axisRight(yVolume)
+    .ticks(4)
+    .tickFormat((d) => (d === 0 ? '' : d.toString()))
+    .tickSizeInner(-width);
   xAxisGroup.call(xAxis);
   yAxisGroup.call(yAxis);
   yVolumeAxisGroup.call(yVolumeAxis);
