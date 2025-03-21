@@ -7,7 +7,7 @@ export default async function CandleChartContainer() {
   //   cache: 'no-store',
   // }).then((res) => res.json());
   // saveJson(data, 'data1000.json');
-  const data = getData('data.json');
+  const data = getData('data1000.json');
   const numData = data.result.list.reverse().map((d: BybitKline, index: number) => ({
     0: Number(d[0]),
     1: Number(d[1]),
