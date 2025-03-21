@@ -20,8 +20,8 @@ export default async function CandleChartContainer() {
   }));
   return (
     <div>
-      {/* <CandleChart data={numData} width={1000} height={500} /> */}
-      <CandleChartCanvas data={numData} width={1000} height={500} />
+      <CandleChart data={numData} width={1000} height={500} />
+      {/* <CandleChartCanvas data={numData} width={1000} height={500} /> */}
     </div>
   );
 }
