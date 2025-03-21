@@ -35,32 +35,26 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
     const localMax = Number(d3.max(data, (d) => d[2])) + 10; // high
     const localMin = Number(d3.min(data, (d) => d[3])) - 10; // low
 
-    const x = d3
-      .scaleTime()
-      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
-      .range([0, width]);
     const xIndex = d3
       .scaleLinear()
       .domain([0, data.length - 1])
+      .range([0, width]);
+
+    const x = d3
+      .scaleTime()
+      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
       .range([0, width]);
     const y = d3
       .scaleLinear()
       .domain([localMin, localMax])
       .range([height * candleChartHeightRatio, 0]);
-
     const volumeMax = Number(d3.max(data, (d) => d[5]));
+
     const yVolume = d3
       .scaleLinear()
       .domain([0, volumeMax])
       .range([height, height * candleChartHeightRatio + 4]);
 
-    const xAxis = d3.axisBottom(x).ticks(10).tickSizeInner(-height);
-    const yAxis = d3.axisRight(y).ticks(10).tickSizeInner(-width);
-    const yVolumeAxis = d3
-      .axisRight(yVolume)
-      .ticks(4)
-      .tickFormat((d) => (d === 0 ? '' : d.toString()))
-      .tickSizeInner(-width);
     const yVolumeAxisGroup = svg
       .append('g')
       .attr('class', 'y-volume-axis')
@@ -81,12 +75,14 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
 
     updateAxis({
       svg,
+      x,
+      y,
+      yVolume,
+      width,
+      height,
       xAxisGroup,
       yAxisGroup,
       yVolumeAxisGroup,
-      xAxis,
-      yAxis,
-      yVolumeAxis,
     });
 
     const { splitLineX } = createBaseLine(svg, width, height, candleChartHeightRatio);
@@ -217,12 +213,14 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
 
       updateAxis({
         svg,
+        x: rescaleX,
+        y: rescaleY,
+        yVolume: rescaleYVolume,
+        width,
+        height,
         xAxisGroup,
         yAxisGroup,
         yVolumeAxisGroup,
-        xAxis,
-        yAxis,
-        yVolumeAxis,
       });
       // Update candle positions and heights
       updateCandles({
