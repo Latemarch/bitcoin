@@ -12,7 +12,7 @@ import {
   drawVolumeOnCanvas,
   updateAxis,
 } from '@/lib/D3/candlesChart';
-import Interaction from './Container';
+import Interaction from './Interaction';
 type Props = {
   initialWidth?: number;
   height?: number;
@@ -27,7 +27,7 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
     if (!svgRef.current) return;
     const svg = d3
       .select(svgRef.current)
-      .attr('style', 'border: 1px solid steelblue')
+      // .attr('style', 'border: 3px solid steelblue')
       .attr('class', 'bg-bgPrimary')
       .attr('width', divWidth)
       .attr('height', height + 20);
@@ -86,6 +86,15 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       .style('color', gray);
 
     createBaseLine(svg, width, height, candleChartHeightRatio);
+    // text on left-top
+    const candleInfo = svg
+      .append('text')
+      .attr('class', 'candle-info')
+      .attr('x', 10)
+      .attr('y', 20)
+      .style('font-size', '16px')
+      .style('fill', gray)
+      .style('text-anchor', 'start');
     //
     updateAxis({
       svg,
@@ -100,13 +109,14 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
     });
     const { verticalLine, horizontalLine } = createGuideLines(svg);
     const { priceIndicator, dateIndicator } = createIndicators(svg, width, height, 1);
-    const { foreignObject, canvas, ctx, pixelRatio } = createCanvasInSVG(svg, width, height);
-    drawCandlesOnCanvas(ctx, data, x, y, 1);
-    drawVolumeOnCanvas(ctx, data, x, yVolume, 1, height);
+    // const { foreignObject, canvas, ctx, pixelRatio } = createCanvasInSVG(svg, width, height);
+    // drawCandlesOnCanvas(ctx, data, x, y, 1);
+    // drawVolumeOnCanvas(ctx, data, x, yVolume, 1, height);
+
     return () => {
       svg.selectAll('*').remove();
     };
-  }, [divWidth]);
+  }, []);
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -122,6 +132,13 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
   return (
     <div className="border-5 flex bg-red-300" ref={divRef}>
       <svg ref={svgRef} />
+      <Interaction
+        svgRef={svgRef}
+        divRef={divRef}
+        data={data}
+        width={divWidth - 70}
+        height={height}
+      />
     </div>
   );
 }

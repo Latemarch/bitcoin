@@ -16,6 +16,9 @@ export function createCanvasInSVG(svg: any, width: number, height: number) {
     };
   }
 
+  // 기존에 있던 foreignObject 요소 제거
+  svg.selectAll('foreignObject').remove();
+
   const foreignObject = svg
     .append('foreignObject')
     .attr('x', 0)
@@ -322,6 +325,7 @@ export function createBaseLine(
 ) {
   const baseLineX = svg
     .append('line')
+    .attr('class', 'base-line-x')
     .attr('x1', 0)
     .attr('y1', height)
     .attr('x2', width * 2)
@@ -330,6 +334,7 @@ export function createBaseLine(
     .style('stroke-width', 1);
   const splitLineX = svg
     .append('line')
+    .attr('class', 'base-line-x')
     .attr('x1', 0)
     .attr('y1', height * candleChartHeightRatio)
     .attr('x2', width * 2)
@@ -339,6 +344,7 @@ export function createBaseLine(
 
   const baseLineY = svg
     .append('line')
+    .attr('class', 'base-line-y')
     .attr('x1', width)
     .attr('y1', 0)
     .attr('x2', width)
