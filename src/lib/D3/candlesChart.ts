@@ -228,11 +228,11 @@ export function writeCandleInfo(text: any, d: BybitKline) {
     .append('tspan')
     .text(`${d[4].toFixed(1)} `)
     .style('fill', d[1] > d[4] ? colors.red : colors.green);
-  text.append('tspan').text('V: ').style('fill', colors.gray);
-  text
-    .append('tspan')
-    .text(`${d[5].toFixed(1)}`)
-    .style('fill', d[1] > d[4] ? colors.red : colors.green);
+  // text.append('tspan').text('V: ').style('fill', colors.gray);
+  // text
+  //   .append('tspan')
+  //   .text(`${d[5].toFixed(1)}`)
+  //   .style('fill', d[1] > d[4] ? colors.red : colors.green);
 }
 
 export function createIndicators(svg: any, width: number, height: number, rectWidth: number) {
@@ -275,7 +275,7 @@ export const colors = {
 };
 
 type Props = {
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  svg: any; //d3.Selection<SVGSVGElement, unknown, null, undefined>;
   x: d3.ScaleTime<number, number, never>;
   y: d3.ScaleLinear<number, number, never>;
   yVolume: d3.ScaleLinear<number, number, never>;

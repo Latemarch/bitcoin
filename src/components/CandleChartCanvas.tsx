@@ -238,7 +238,6 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
 
       // Get visible domain
       const visibleDomain = rescaleX.domain();
-      console.log('visibleDomain', visibleDomain);
 
       // Filter data points within visible domain
       const visibleData = data.filter((d) => {

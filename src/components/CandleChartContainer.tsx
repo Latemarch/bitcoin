@@ -1,26 +1,25 @@
-import { getData, saveJson } from '@/lib/getPublicData';
+'use client';
+import * as React from 'react';
+import { getRecentCandles } from '@/lib/getCandles';
 import { BybitKline } from '@/types/type';
 import CandleChartCanvas from './CandleChartCanvas';
-export default async function CandleChartContainer() {
-  // const data = await fetch('http://localhost:3000/api/candle?interval=1', {
-  //   cache: 'no-store',
-  // }).then((res) => res.json());
-  // saveJson(data, 'data1000.json');
-  const data = getData('data1000.json');
-  const numData = data.result.list.reverse().map((d: BybitKline, index: number) => ({
-    0: Number(d[0]),
-    1: Number(d[1]),
-    2: Number(d[2]),
-    3: Number(d[3]),
-    4: Number(d[4]),
-    5: Number(d[5]),
-    6: Number(d[6]),
-    index,
-  }));
+import BybitWS from './BybitWS';
+
+export default function CandleChartContainer() {
+  const [data, setData] = React.useState<BybitKline[]>([]);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      const res = await getRecentCandles({});
+      if (res.ok) setData(res.data);
+    };
+    fetchData();
+  }, []);
+
   return (
     <div className="w-11/12">
-      {/* <CandleChart data={numData} width={1000} height={500} /> */}
-      <CandleChartCanvas data={numData} width={1000} height={500} />
+      <BybitWS setData={setData} data={data} />
+      {data.length > 0 && <CandleChartCanvas data={data} width={1000} height={500} />}
     </div>
   );
 }

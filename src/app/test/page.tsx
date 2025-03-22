@@ -16,7 +16,7 @@ export default function page() {
   }));
   return (
     <div>
-      <Container data={numData} />
+      <Container />
     </div>
   );
 }
