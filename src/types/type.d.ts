@@ -8,3 +8,21 @@ export type BybitKline = {
   6: number; // turnover - Turnover
   index: number;
 };
+
+export type BybitWSData = {
+  topic: string;
+  type: string;
+  ts: number;
+  data: {
+    T: number; // Timestamp
+    s: string; // Symbol
+    S: string; // Side
+    v: string; // Volume
+    p: string; // Price
+    L: string; // Tick direction
+    i: string; // Trade ID
+    BT: boolean; // Is block trade
+    RPI: boolean; // Is retail price improvement
+  }[];
+  wsKey: string;
+};

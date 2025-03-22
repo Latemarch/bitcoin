@@ -12,7 +12,7 @@ export async function getRecentCandles({
   symbol?: string;
   interval?: KlineIntervalV3;
   limit?: string;
-}) {
+}): Promise<{ ok: boolean; res?: BybitKline[]; error?: string }> {
   try {
     const res = (await bybitClient.getKline({
       category,

@@ -27,6 +27,17 @@ type Props = {
 export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }: Props) {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const { gray, red, green } = colors;
+  // const scaleRef = React.useRef<{
+  //   x: d3.ScaleTime<number, number>;
+  //   xIndex: d3.ScaleLinear<number, number>;
+  //   y: d3.ScaleLinear<number, number>;
+  //   yVolume: d3.ScaleLinear<number, number>;
+  // }>({
+  //   x: d3.scaleTime(),
+  //   xIndex: d3.scaleLinear(),
+  //   y: d3.scaleLinear(),
+  //   yVolume: d3.scaleLinear(),
+  // });
 
   React.useEffect(() => {
     if (!svgRef.current || !data) return;
@@ -288,7 +299,11 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
         svg.selectAll('*').remove();
       }
     };
-  }, [data, width, height]);
+  }, [width, height]);
+  React.useEffect(() => {
+    if (!data) return;
+    console.log(data[data.length - 1][4]);
+  }, [data]);
 
   return (
     <div className="w-full h-full bg-bgPrimary">
