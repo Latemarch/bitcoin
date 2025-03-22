@@ -1,7 +1,6 @@
 import { getData, saveJson } from '@/lib/getPublicData';
-import CandleChart from './CandleChart';
 import { BybitKline } from '@/types/type';
-import CandleChartCanvas from './CandleChartCanvas';
+import CandleChartOnCanvas from './CandleChartCanvas';
 export default async function CandleChartContainer() {
   // const data = await fetch('http://localhost:3000/api/candle?interval=1', {
   //   cache: 'no-store',
@@ -19,9 +18,9 @@ export default async function CandleChartContainer() {
     index,
   }));
   return (
-    <div>
-      <CandleChart data={numData} width={1000} height={500} />
-      {/* <CandleChartCanvas data={numData} width={1000} height={500} /> */}
+    <div className="w-11/12">
+      {/* <CandleChart data={numData} width={1000} height={500} /> */}
+      <CandleChartOnCanvas data={numData} width={1000} height={500} />
     </div>
   );
 }
