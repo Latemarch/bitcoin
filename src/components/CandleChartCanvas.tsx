@@ -45,6 +45,31 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
     k: 1,
   });
 
+  let candleChartHeightRatio = 0.8;
+  const localMax = Number(d3.max(data, (d) => d[2])) + 10; // high
+  const localMin = Number(d3.min(data, (d) => d[3])) - 10; // low
+
+  const xIndex = d3
+    .scaleLinear()
+    .domain([0, data.length - 1])
+    .range([0, width]);
+
+  const x = d3
+    .scaleTime()
+    .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
+    .range([0, width]);
+
+  const y = d3
+    .scaleLinear()
+    .domain([localMin, localMax])
+    .range([height * candleChartHeightRatio, 0]);
+
+  const volumeMax = Number(d3.max(data, (d) => d[5]));
+  const yVolume = d3
+    .scaleLinear()
+    .domain([0, volumeMax])
+    .range([height, height * candleChartHeightRatio + 4]);
+
   React.useEffect(() => {
     if (!svgRef.current || !data) return;
     let candleChartHeightRatio = 0.8;
@@ -53,29 +78,34 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
       .style('border', '3px solid steelblue')
       .attr('viewBox', `0 -20 ${width + 70} ${height + 50}`);
 
-    const localMax = Number(d3.max(data, (d) => d[2])) + 10; // high
-    const localMin = Number(d3.min(data, (d) => d[3])) - 10; // low
+    // const localMax = Number(d3.max(data, (d) => d[2])) + 10; // high
+    // const localMin = Number(d3.min(data, (d) => d[3])) - 10; // low
 
-    const xIndex = d3
-      .scaleLinear()
-      .domain([0, data.length - 1])
-      .range([0, width]);
+    // const xIndex = d3
+    //   .scaleLinear()
+    //   .domain([0, data.length - 1])
+    //   .range([0, width]);
 
-    const x = d3
-      .scaleTime()
-      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
-      .range([0, width]);
+    // const x = d3
+    //   .scaleTime()
+    //   .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
+    //   .range([0, width]);
 
-    const y = d3
-      .scaleLinear()
-      .domain([localMin, localMax])
-      .range([height * candleChartHeightRatio, 0]);
+    // const y = d3
+    //   .scaleLinear()
+    //   .domain([localMin, localMax])
+    //   .range([height * candleChartHeightRatio, 0]);
 
-    const volumeMax = Number(d3.max(data, (d) => d[5]));
-    const yVolume = d3
-      .scaleLinear()
-      .domain([0, volumeMax])
-      .range([height, height * candleChartHeightRatio + 4]);
+    // const volumeMax = Number(d3.max(data, (d) => d[5]));
+    // const yVolume = d3
+    //   .scaleLinear()
+    //   .domain([0, volumeMax])
+    //   .range([height, height * candleChartHeightRatio + 4]);
+
+    scaleRef.current.rescaleXIndex = xIndex;
+    scaleRef.current.rescaleX = x;
+    scaleRef.current.rescaleY = y;
+    scaleRef.current.rescaleYVolume = yVolume;
 
     const yVolumeAxisGroup = svg
       .append('g')

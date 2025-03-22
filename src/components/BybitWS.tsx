@@ -38,6 +38,7 @@ export default function BybitWS({ setData, data }: Props) {
       } else {
         const { v, p } = lastTrade.data[0];
         setData(
+          //@ts-ignore
           (prev: BybitKline[]) =>
             [
               ...prev,
