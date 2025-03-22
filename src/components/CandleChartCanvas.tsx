@@ -27,17 +27,23 @@ type Props = {
 export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }: Props) {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const { gray, red, green } = colors;
-  // const scaleRef = React.useRef<{
-  //   x: d3.ScaleTime<number, number>;
-  //   xIndex: d3.ScaleLinear<number, number>;
-  //   y: d3.ScaleLinear<number, number>;
-  //   yVolume: d3.ScaleLinear<number, number>;
-  // }>({
-  //   x: d3.scaleTime(),
-  //   xIndex: d3.scaleLinear(),
-  //   y: d3.scaleLinear(),
-  //   yVolume: d3.scaleLinear(),
-  // });
+  const canvasRef = React.useRef<{ ctx: CanvasRenderingContext2D | null; pixelRatio: number }>({
+    ctx: null,
+    pixelRatio: 1,
+  });
+  const scaleRef = React.useRef<{
+    rescaleX: d3.ScaleTime<number, number>;
+    rescaleXIndex: d3.ScaleLinear<number, number>;
+    rescaleY: d3.ScaleLinear<number, number>;
+    rescaleYVolume: d3.ScaleLinear<number, number>;
+    k: number;
+  }>({
+    rescaleX: d3.scaleTime(),
+    rescaleXIndex: d3.scaleLinear(),
+    rescaleY: d3.scaleLinear(),
+    rescaleYVolume: d3.scaleLinear(),
+    k: 1,
+  });
 
   React.useEffect(() => {
     if (!svgRef.current || !data) return;
@@ -113,7 +119,8 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
       .attr('height', height);
 
     // SVG 내부에 Canvas 생성 (고해상도 지원)
-    const { ctx: canvasCtx, pixelRatio } = createCanvasInSVG(svg, width, height);
+    canvasRef.current = createCanvasInSVG(svg, width, height);
+    const { ctx: canvasCtx, pixelRatio } = canvasRef.current;
 
     // 캔들 너비 계산
     const candleWidth = (x(new Date(Number(data[1][0]))) - x(new Date(Number(data[0][0])))) * 0.9;
@@ -191,8 +198,10 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
     });
 
     const handleZoom = ({ transform }: any) => {
-      const rescaleX = transform.rescaleX(x);
-      const rescaleXIndex = transform.rescaleX(xIndex);
+      const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
+      scaleRef.current.rescaleX = transform.rescaleX(x);
+      scaleRef.current.rescaleXIndex = transform.rescaleX(xIndex);
+      scaleRef.current.k = transform.k;
 
       // Get visible domain
       const visibleDomain = rescaleX.domain();
@@ -208,12 +217,12 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
       const visibleMin = Number(d3.min(visibleData, (d) => d[3])) - 10;
       const visibleVolumeMax = Number(d3.max(visibleData, (d) => d[5]));
 
-      const rescaleY = d3
+      scaleRef.current.rescaleY = d3
         .scaleLinear()
         .domain([visibleMin, visibleMax])
         .range([height * candleChartHeightRatio, 0]);
 
-      const rescaleYVolume = d3
+      scaleRef.current.rescaleYVolume = d3
         .scaleLinear()
         .domain([0, visibleVolumeMax])
         .range([height, height * candleChartHeightRatio + 4]);
@@ -245,6 +254,7 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
       svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
 
       listeningRect.on('mousemove', (e) => {
+        // const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
         const [xCoord, yCoord] = d3.pointer(e);
         const bisectDate = d3.bisector((d: any) => d.index).left;
         const x0 = rescaleXIndex.invert(xCoord);
@@ -294,6 +304,7 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
     svg.call(zoom as any);
 
     return function cleanup() {
+      const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
       if (svgRef.current) {
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
@@ -303,6 +314,21 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
   React.useEffect(() => {
     if (!data) return;
     console.log(data[data.length - 1][4]);
+    const { ctx: canvasCtx, pixelRatio } = canvasRef.current;
+    const { rescaleX, rescaleY, rescaleYVolume, k } = scaleRef.current;
+
+    if (canvasCtx) {
+      canvasCtx.clearRect(0, 0, width, height);
+
+      // 줌 상태에 따라 캔들 너비 조정
+      const candleWidth = 1;
+      // (rescaleX(new Date(Number(data[1][0]))) - rescaleX(new Date(Number(data[0][0])))) * 0.9;
+      const zoomedCandleWidth = candleWidth * k;
+
+      // 선명한 렌더링을 위해 업데이트된 함수 사용
+      drawCandlesOnCanvas(canvasCtx, data, rescaleX, rescaleY, zoomedCandleWidth);
+      drawVolumeOnCanvas(canvasCtx, data, rescaleX, rescaleYVolume, zoomedCandleWidth, height);
+    }
   }, [data]);
 
   return (
