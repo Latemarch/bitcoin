@@ -10,17 +10,26 @@ export function createCanvasInSVG(svg: any, width: number, height: number) {
     .attr('height', height)
     .attr('clip-path', 'url(#chart-area)');
 
+  const pixelRatio = window.devicePixelRatio || 1;
+
   const canvasNode = document.createElement('canvas');
-  canvasNode.width = width;
-  canvasNode.height = height;
+  canvasNode.width = width * pixelRatio;
+  canvasNode.height = height * pixelRatio;
   canvasNode.style.width = `${width}px`;
   canvasNode.style.height = `${height}px`;
 
   foreignObject.node().appendChild(canvasNode);
 
-  const ctx = canvasNode.getContext('2d');
+  const ctx = canvasNode.getContext('2d', { alpha: true });
 
-  return { foreignObject, canvas: canvasNode, ctx };
+  if (ctx) {
+    ctx.scale(pixelRatio, pixelRatio);
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
+  return { foreignObject, canvas: canvasNode, ctx, pixelRatio };
 }
 
 export function drawCandlesOnCanvas(
@@ -33,11 +42,11 @@ export function drawCandlesOnCanvas(
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   data.forEach((d) => {
-    const xPos = x(new Date(d[0]));
-    const open = y(d[1]);
-    const close = y(d[4]);
-    const high = y(d[2]);
-    const low = y(d[3]);
+    const xPos = Math.round(x(new Date(d[0]))) - 0.25;
+    const open = Math.round(y(d[1])) + 0.5;
+    const close = Math.round(y(d[4])) + 0.5;
+    const high = Math.round(y(d[2])) + 0.5;
+    const low = Math.round(y(d[3])) + 0.5;
 
     ctx.beginPath();
     ctx.moveTo(xPos, high);
@@ -47,12 +56,19 @@ export function drawCandlesOnCanvas(
     ctx.stroke();
 
     ctx.fillStyle = d[1] > d[4] ? colors.red : colors.green;
-    ctx.fillRect(
-      xPos - candleWidth / 2,
-      Math.min(open, close),
-      candleWidth,
-      Math.max(Math.abs(close - open), 1)
-    );
+
+    const adjustedWidth = Math.max(Math.round(candleWidth), 1);
+    const xStart = Math.round(xPos - adjustedWidth / 2) - 0.5;
+    const bodyHeight = Math.max(Math.abs(close - open), 1);
+
+    ctx.fillRect(xStart, Math.min(open, close), adjustedWidth, bodyHeight);
+
+    ctx.strokeStyle =
+      d[1] > d[4]
+        ? d3.color(colors.red)?.darker(0.5).toString() || colors.red
+        : d3.color(colors.green)?.darker(0.5).toString() || colors.green;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(xStart, Math.min(open, close), adjustedWidth, bodyHeight);
   });
 }
 
@@ -65,12 +81,26 @@ export function drawVolumeOnCanvas(
   height: number
 ) {
   data.forEach((d) => {
-    const xPos = x(new Date(d[0]));
-    const volumeHeight = height - yVolume(d[5]);
+    const xPos = Math.round(x(new Date(d[0]))) + 0.5;
+    const volumeY = Math.round(yVolume(d[5])) + 0.5;
+    const volumeHeight = Math.round(height - volumeY);
 
-    ctx.fillStyle = d[1] > d[4] ? colors.red : colors.green;
-    ctx.globalAlpha = 0.5;
-    ctx.fillRect(xPos - candleWidth / 2, yVolume(d[5]), candleWidth, volumeHeight);
+    const adjustedWidth = Math.max(Math.round(candleWidth), 1);
+    const xStart = Math.round(xPos - adjustedWidth / 2) + 0.5;
+
+    const fillColor = d[1] > d[4] ? colors.red : colors.green;
+    ctx.fillStyle = fillColor;
+    ctx.globalAlpha = 0.6;
+
+    ctx.fillRect(xStart, volumeY, adjustedWidth, volumeHeight);
+
+    ctx.strokeStyle =
+      d[1] > d[4]
+        ? d3.color(colors.red)?.darker(0.5).toString() || colors.red
+        : d3.color(colors.green)?.darker(0.5).toString() || colors.green;
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(xStart, volumeY, adjustedWidth, volumeHeight);
+
     ctx.globalAlpha = 1.0;
   });
 }

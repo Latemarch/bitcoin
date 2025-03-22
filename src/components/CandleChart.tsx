@@ -101,8 +101,8 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
       .attr('width', width)
       .attr('height', height);
 
-    // SVG 내부에 Canvas 생성
-    const { ctx: canvasCtx } = createCanvasInSVG(svg, width, height);
+    // SVG 내부에 Canvas 생성 (고해상도 지원)
+    const { ctx: canvasCtx, pixelRatio } = createCanvasInSVG(svg, width, height);
 
     // 캔들 너비 계산
     const candleWidth = (x(new Date(Number(data[1][0]))) - x(new Date(Number(data[0][0])))) * 0.9;
@@ -219,18 +219,16 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
         yVolumeAxisGroup,
       });
 
-      // Canvas에 캔들과 거래량 다시 그리기
+      // Canvas에 캔들과 거래량 다시 그리기 - 고해상도 고려
       if (canvasCtx) {
         canvasCtx.clearRect(0, 0, width, height);
-        drawCandlesOnCanvas(canvasCtx, data, rescaleX, rescaleY, candleWidth * transform.k);
-        drawVolumeOnCanvas(
-          canvasCtx,
-          data,
-          rescaleX,
-          rescaleYVolume,
-          candleWidth * transform.k,
-          height
-        );
+
+        // 줌 상태에 따라 캔들 너비 조정
+        const zoomedCandleWidth = candleWidth * transform.k;
+
+        // 선명한 렌더링을 위해 업데이트된 함수 사용
+        drawCandlesOnCanvas(canvasCtx, data, rescaleX, rescaleY, zoomedCandleWidth);
+        drawVolumeOnCanvas(canvasCtx, data, rescaleX, rescaleYVolume, zoomedCandleWidth, height);
       }
 
       svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
@@ -274,7 +272,7 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
 
     const zoom = d3
       .zoom()
-      .scaleExtent([1, 10]) // 최대 10배까지 확대 가능
+      .scaleExtent([1, 20]) // 최대 10배까지 확대 가능
       .translateExtent([
         [-100, 0],
         [1100, height],
