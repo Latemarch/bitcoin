@@ -240,6 +240,7 @@ export default function CandleChartOnCanvas({ data, width = 1000, height = 500 }
         const i = bisectDate(data, x0);
         const d0 = data[i - 1];
         const d1 = data[i];
+        if (!d0 || !d1) return;
         const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
         const xPos = rescaleX(d[0]);
         const yPos = yCoord;

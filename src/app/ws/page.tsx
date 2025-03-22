@@ -1,11 +1,8 @@
 import CandleChartContainer from '@/components/CandleChartContainer';
-import WebsocketBybit from '@/components/Websocket_bybit';
-import WebsocketServer from '@/components/WebsocketServer';
-
+import BybitWS from '@/components/BybitWS';
 export default function page() {
   return (
     <div>
-      {/* <WebsocketBybit /> */}
       <CandleChartContainer />
     </div>
   );
