@@ -30,7 +30,9 @@ export default function CandleChart({ data, width = 1000, height = 500 }: Props)
     const svg = d3
       .select(svgRef.current)
       .style('border', '3px solid steelblue')
-      .attr('viewBox', `0 -20 ${width + 70} ${height + 50}`);
+      .attr('width', width + 70)
+      .attr('height', height + 50);
+    // .attr('viewBox', `0 -20 ${width + 70} ${height + 50}`);
 
     const localMax = Number(d3.max(data, (d) => d[2])) + 10; // high
     const localMin = Number(d3.min(data, (d) => d[3])) - 10; // low

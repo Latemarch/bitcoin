@@ -5,3 +5,7 @@
 body {
   font-variant-numeric: tabular-nums;
 }
+
+.axis-text {
+  font-size: 12px;
+}

@@ -1,7 +1,21 @@
 import { BybitKline } from '@/types/type';
 import * as d3 from 'd3';
 
+// 서버 환경인지 확인하는 유틸리티 함수
+const isServer = () => typeof window === 'undefined';
+
 export function createCanvasInSVG(svg: any, width: number, height: number) {
+  // 서버 환경에서는 더미 객체 반환
+  if (isServer()) {
+    console.log('Server environment detected, returning mock canvas');
+    return {
+      foreignObject: svg.append('g'),
+      canvas: null,
+      ctx: null,
+      pixelRatio: 1,
+    };
+  }
+
   const foreignObject = svg
     .append('foreignObject')
     .attr('x', 0)
@@ -33,12 +47,16 @@ export function createCanvasInSVG(svg: any, width: number, height: number) {
 }
 
 export function drawCandlesOnCanvas(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | null,
   data: BybitKline[],
   x: any,
   y: any,
   candleWidth: number
 ) {
+  // 서버 환경이거나 ctx가 null이면 아무것도 하지 않음
+  // if (isServer() || !ctx) return;
+  if (!ctx) return;
+
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   data.forEach((d) => {
@@ -73,13 +91,16 @@ export function drawCandlesOnCanvas(
 }
 
 export function drawVolumeOnCanvas(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | null,
   data: BybitKline[],
   x: any,
   yVolume: any,
   candleWidth: number,
   height: number
 ) {
+  // 서버 환경이거나 ctx가 null이면 아무것도 하지 않음
+  if (isServer() || !ctx) return;
+
   data.forEach((d) => {
     const xPos = Math.round(x(new Date(d[0]))) + 0.5;
     const volumeY = Math.round(yVolume(d[5])) + 0.5;
@@ -276,8 +297,8 @@ export function updateAxis({
   yAxisGroup,
   yVolumeAxisGroup,
 }: Props) {
-  const xAxis = d3.axisBottom(x).ticks(10).tickSizeInner(-height);
-  const yAxis = d3.axisRight(y).ticks(10).tickSizeInner(-width);
+  const xAxis = d3.axisBottom(x).ticks(10).tickSizeInner(-height).tickPadding(4);
+  const yAxis = d3.axisRight(y).ticks(10).tickSizeInner(-width).tickPadding(4);
   const yVolumeAxis = d3
     .axisRight(yVolume)
     .ticks(4)
@@ -326,4 +347,23 @@ export function createBaseLine(
     .style('stroke-width', 1);
 
   return { baseLineX, splitLineX, baseLineY };
+}
+
+/**
+ * 서버 사이드에서 캔들 차트 SVG를 생성하는 함수
+ */
+
+// SVG 차트를 반응형으로 만들기 위한 유틸리티 함수
+export function setResponsiveSVGDimensions(
+  svg: d3.Selection<any, unknown, null, undefined>,
+  width: number,
+  height: number
+) {
+  svg
+    .attr('width', '100%')
+    .attr('height', '100%')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet');
+
+  return svg;
 }
