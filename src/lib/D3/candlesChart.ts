@@ -1,6 +1,80 @@
 import { BybitKline } from '@/types/type';
 import * as d3 from 'd3';
 
+export function createCanvasInSVG(svg: any, width: number, height: number) {
+  const foreignObject = svg
+    .append('foreignObject')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', width)
+    .attr('height', height)
+    .attr('clip-path', 'url(#chart-area)');
+
+  const canvasNode = document.createElement('canvas');
+  canvasNode.width = width;
+  canvasNode.height = height;
+  canvasNode.style.width = `${width}px`;
+  canvasNode.style.height = `${height}px`;
+
+  foreignObject.node().appendChild(canvasNode);
+
+  const ctx = canvasNode.getContext('2d');
+
+  return { foreignObject, canvas: canvasNode, ctx };
+}
+
+export function drawCandlesOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  data: BybitKline[],
+  x: any,
+  y: any,
+  candleWidth: number
+) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  data.forEach((d) => {
+    const xPos = x(new Date(d[0]));
+    const open = y(d[1]);
+    const close = y(d[4]);
+    const high = y(d[2]);
+    const low = y(d[3]);
+
+    ctx.beginPath();
+    ctx.moveTo(xPos, high);
+    ctx.lineTo(xPos, low);
+    ctx.strokeStyle = d[1] > d[4] ? colors.red : colors.green;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = d[1] > d[4] ? colors.red : colors.green;
+    ctx.fillRect(
+      xPos - candleWidth / 2,
+      Math.min(open, close),
+      candleWidth,
+      Math.max(Math.abs(close - open), 1)
+    );
+  });
+}
+
+export function drawVolumeOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  data: BybitKline[],
+  x: any,
+  yVolume: any,
+  candleWidth: number,
+  height: number
+) {
+  data.forEach((d) => {
+    const xPos = x(new Date(d[0]));
+    const volumeHeight = height - yVolume(d[5]);
+
+    ctx.fillStyle = d[1] > d[4] ? colors.red : colors.green;
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(xPos - candleWidth / 2, yVolume(d[5]), candleWidth, volumeHeight);
+    ctx.globalAlpha = 1.0;
+  });
+}
+
 export function createCandles(svg: any, data: BybitKline[], x: any, y: any) {
   const candles = svg.append('g').attr('class', 'candles').attr('clip-path', 'url(#chart-area)');
 
@@ -25,6 +99,7 @@ export function createCandles(svg: any, data: BybitKline[], x: any, y: any) {
   updateCandles({ candles, x, y, candleWidth });
   return { candles, candleWidth };
 }
+
 export function updateCandles({ candles, x, y, candleWidth }: any) {
   candles
     .selectAll('rect')
@@ -61,6 +136,7 @@ export function createGuideLines(svg: any) {
 
   return { verticalLine, horizontalLine };
 }
+
 export function updateGuideLines({ svg, xPos, yPos, width, height }: any) {
   svg
     .select('.guide-vertical-line')
@@ -158,6 +234,7 @@ type Props = {
   yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   yVolumeAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
 };
+
 export function updateAxis({
   svg,
   x,
