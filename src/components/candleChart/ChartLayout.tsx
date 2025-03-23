@@ -5,11 +5,8 @@ import { BybitKline } from '@/types/type';
 import {
   colors,
   createBaseLine,
-  createCanvasInSVG,
   createGuideLines,
   createIndicators,
-  drawCandlesOnCanvas,
-  drawVolumeOnCanvas,
   updateAxis,
 } from '@/lib/D3/candlesChart';
 import Interaction from './Interaction';
@@ -23,24 +20,25 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
   const svgRef = React.useRef<SVGSVGElement>(null);
   const divRef = React.useRef<HTMLDivElement>(null);
   const [divWidth, setDivWidth] = React.useState(initialWidth);
+  const [renderComplete, setRenderComplete] = React.useState(false);
+
   React.useEffect(() => {
     if (!svgRef.current) return;
+
+    setRenderComplete(false);
+
     const svg = d3
       .select(svgRef.current)
-      // .attr('style', 'border: 3px solid steelblue')
       .attr('class', 'bg-bgPrimary')
       .attr('width', divWidth)
       .attr('height', height + 20);
     // .attr('border', '1px solid steelblue');
 
     const width = divWidth - 70;
-    const { gray, red, green } = colors;
+    const { gray } = colors;
     let candleChartHeightRatio = 0.8;
 
-    const xIndex = d3
-      .scaleLinear()
-      .domain([0, data.length - 1])
-      .range([0, width]);
+    createBaseLine(svg, width, height, candleChartHeightRatio);
 
     const x = d3
       .scaleTime()
@@ -85,7 +83,6 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       .attr('transform', `translate(${width}, 0)`)
       .style('color', gray);
 
-    createBaseLine(svg, width, height, candleChartHeightRatio);
     // text on left-top
     const candleInfo = svg
       .append('text')
@@ -107,16 +104,16 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       yAxisGroup,
       yVolumeAxisGroup,
     });
-    const { verticalLine, horizontalLine } = createGuideLines(svg);
-    const { priceIndicator, dateIndicator } = createIndicators(svg, width, height, 1);
-    // const { foreignObject, canvas, ctx, pixelRatio } = createCanvasInSVG(svg, width, height);
-    // drawCandlesOnCanvas(ctx, data, x, y, 1);
-    // drawVolumeOnCanvas(ctx, data, x, yVolume, 1, height);
+    createGuideLines(svg);
+    createIndicators(svg, width, height, 1);
+
+    setTimeout(() => setRenderComplete(true), 0);
 
     return () => {
       svg.selectAll('*').remove();
+      setRenderComplete(false);
     };
-  }, []);
+  }, [divWidth]);
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -132,7 +129,9 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
   return (
     <div className="border-5 flex bg-red-300" ref={divRef}>
       <svg ref={svgRef} />
-      <Interaction svgRef={svgRef} data={data} divWidth={divWidth} height={height} />
+      {renderComplete && (
+        <Interaction svgRef={svgRef} data={data} divWidth={divWidth} height={height} />
+      )}
     </div>
   );
 }
