@@ -24,6 +24,7 @@ type Props = {
 export default function Interaction({ svgRef, data, height, candleChartHeightRatio = 0.8 }: Props) {
   const [divWidth, setDivWidth] = React.useState(0);
   const divRef = React.useRef<HTMLDivElement>(null);
+  const zoomRef = React.useRef<any>(d3.zoomIdentity);
   const scaleRef = React.useRef({
     x: d3.scaleTime(),
     xIndex: d3.scaleLinear(),
@@ -33,7 +34,6 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
   });
   React.useEffect(() => {
     if (!svgRef.current) return;
-    const { gray } = colors;
 
     // SVG 선택 및 초기화
     const svg = d3.select(svgRef.current);
@@ -41,23 +41,13 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
 
     svg.attr('width', divWidth);
 
-    // 스케일 설정
-    // const xIndex = d3
-    //   .scaleLinear()
-    //   .domain([0, data.length - 1])
-    //   .range([0, width]);
-
-    // const xRect = d3
-    //   .scaleTime()
-    //   .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
-    //   .range([0, width]);
-
-    const x = d3
+    const tempX = d3
       .scaleTime()
-      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
+      .domain(scaleRef.current.xDomain)
       .range([Math.min(0, width - 1000), width]);
 
     // 보이는 데이터 계산
+    const x = zoomRef.current.rescaleX(tempX);
     const firstDate = x.invert(0);
     const lastDate = x.invert(width);
     const visibleData = data.filter((d) => {
@@ -75,6 +65,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       .domain([minPrice, maxPrice])
       .range([height * candleChartHeightRatio, 0]);
 
+    // const y = zoomRef.current.rescaleY(tempY);
     const yVolume = d3
       .scaleLinear()
       .domain([0, volumeMax])
@@ -85,6 +76,10 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     const yVolumeAxisGroup = d3
       .select('.y-volume-axis')
       .attr('transform', `translate(${width}, 0)`);
+
+    // scaleRef.current.x = x;
+    // scaleRef.current.y = y;
+    // scaleRef.current.yVolume = yVolume;
     // 축 업데이트
     updateAxis({
       svg,
@@ -135,15 +130,17 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
 
     // --------------------------------------------- zoom 이벤트 처리
     const handleZoom = ({ transform }: any) => {
-      // const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
-      const rescaleX = transform.rescaleX(x);
+      // 새 transform 상태 저장
+      zoomRef.current = transform;
+
+      const rescaleX = transform.rescaleX(tempX);
       //   const rescaleXIndex = transform.rescaleX(xIndex);
       const k = transform.k;
-      // console.log(rescaleX, rescaleY);
+      //   console.log(k);
 
       // Get visible domain
       const visibleDomain = rescaleX.domain();
-      scaleRef.current.xDomain = visibleDomain;
+      //   scaleRef.current.xDomain = visibleDomain;
 
       // Filter data points within visible domain
       const visibleData = data.filter((d) => {
@@ -166,6 +163,10 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
         .domain([0, visibleVolumeMax])
         .range([height, height * candleChartHeightRatio + 4]);
 
+      //   scaleRef.current.x = rescaleX;
+      //   scaleRef.current.y = rescaleY;
+      //   scaleRef.current.yVolume = rescaleYVolume;
+
       // updateAxis({
       //   svg,
       //   x: rescaleX,
@@ -180,10 +181,10 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
 
       // // Canvas에 캔들과 거래량 다시 그리기 - 고해상도 고려
       if (ctx) {
-        ctx.clearRect(0, 0, width, height);
+        // ctx.clearRect(0, 0, width, height);
 
         // 줌 상태에 따라 캔들 너비 조정
-        const zoomedCandleWidth = candleWidth * transform.k;
+        const zoomedCandleWidth = candleWidth;
 
         // 선명한 렌더링을 위해 업데이트된 함수 사용
         drawCandlesOnCanvas(ctx, data, rescaleX, rescaleY, zoomedCandleWidth);
@@ -245,16 +246,19 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       // });
     };
 
-    svg.call(
-      d3
-        .zoom()
-        .scaleExtent([1, 20]) // 최대 20배까지 확대 가능
-        .translateExtent([
-          [-100, 0],
-          [1100, height],
-        ])
-        .on('zoom', handleZoom) as any
-    );
+    // zoom 객체 새로 생성 - 매번 새로운 인스턴스를 만들어 이전 상태 제거
+    const zoom = d3
+      .zoom()
+      .scaleExtent([1, 20])
+      .translateExtent([
+        [-100, 0],
+        [1100, height],
+      ])
+      .on('zoom', handleZoom);
+
+    // 기존 zoom 이벤트 핸들러 제거 후 새 zoom 객체 적용
+    svg.call(zoom as any, d3.zoomIdentity);
+
     // 클린업 함수
     return () => {
       listeningRect.remove();
@@ -270,7 +274,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [data]);
 
   return <div className="absolute inset-0 pointer-events-none" ref={divRef}></div>;
 }

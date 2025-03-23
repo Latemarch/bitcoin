@@ -28,8 +28,6 @@ export function handleMouseMove({
   const bisectDate = d3.bisector((d: any) => d[0]).left;
   const x0 = x.invert(xCoord);
   const i = bisectDate(data, x0);
-  console.log(i);
-
   const d0 = data[i - 1];
   const d1 = data[i];
   //   if (!d0 || !d1) {
@@ -40,14 +38,14 @@ export function handleMouseMove({
   const xPos = x(d0[0]);
   const yPos = yCoord;
 
-  //   d3.select('.candle-info').call((text) => writeCandleInfo(text, d));
-  //   d3.select('.price-indicator').attr('transform', `translate(${width}, ${yPos - 5})`);
+  d3.select('.candle-info').call((text) => writeCandleInfo(text, d0));
+  d3.select('.price-indicator').attr('transform', `translate(${width}, ${yPos - 5})`);
 
-  //   const indicatorText =
-  //     yCoord < height * candleChartHeightRatio
-  //       ? y.invert(yCoord).toFixed(2)
-  //       : yVolume.invert(yCoord).toFixed(0);
-  //   d3.select('.price-indicator text').text(indicatorText);
+  const indicatorText =
+    yCoord < height * candleChartHeightRatio
+      ? y.invert(yCoord).toFixed(2)
+      : yVolume.invert(yCoord).toFixed(0);
+  d3.select('.price-indicator text').text(indicatorText);
 
   updateGuideLines({ svg, xPos, yPos, width, height });
 }
