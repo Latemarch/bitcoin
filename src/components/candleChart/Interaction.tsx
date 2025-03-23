@@ -38,16 +38,17 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     // SVG 선택 및 초기화
     const svg = d3.select(svgRef.current);
     const width = (divWidth || 1000) - 70;
+    console.log(width, zoomRef.current.k);
 
     svg.attr('width', divWidth);
 
-    const tempX = d3
+    const originalX = d3
       .scaleTime()
       .domain(scaleRef.current.xDomain)
       .range([Math.min(0, width - 1000), width]);
 
     // 보이는 데이터 계산
-    const x = zoomRef.current.rescaleX(tempX);
+    const x = zoomRef.current.rescaleX(originalX);
     const firstDate = x.invert(0);
     const lastDate = x.invert(width);
     const visibleData = data.filter((d) => {
@@ -96,7 +97,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     // Canvas 생성 및 캔들/볼륨 그리기
     // createCanvasInSVG 내부에서 기존 foreignObject 요소를 제거함
 
-    const candleWidth = (x(new Date(Number(data[1][0]))) - x(new Date(Number(data[0][0])))) * 0.9;
+    const candleWidth = (x(new Date(Number(data[1][0]))) - x(new Date(Number(data[0][0])))) * 0.8;
     const { ctx } = createCanvasInSVG(svg, width, height);
     drawCandlesOnCanvas(ctx, data, x, y, candleWidth);
     drawVolumeOnCanvas(ctx, data, x, yVolume, candleWidth, height);
@@ -133,7 +134,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       // 새 transform 상태 저장
       zoomRef.current = transform;
 
-      const rescaleX = transform.rescaleX(tempX);
+      const rescaleX = transform.rescaleX(originalX);
       //   const rescaleXIndex = transform.rescaleX(xIndex);
       const k = transform.k;
       //   console.log(k);
@@ -184,7 +185,9 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
         // ctx.clearRect(0, 0, width, height);
 
         // 줌 상태에 따라 캔들 너비 조정
-        const zoomedCandleWidth = candleWidth;
+        const candleWidth =
+          (originalX(new Date(Number(data[1][0]))) - originalX(new Date(Number(data[0][0])))) * 0.8;
+        const zoomedCandleWidth = candleWidth * transform.k;
 
         // 선명한 렌더링을 위해 업데이트된 함수 사용
         drawCandlesOnCanvas(ctx, data, rescaleX, rescaleY, zoomedCandleWidth);
