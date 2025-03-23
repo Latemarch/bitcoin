@@ -32,7 +32,7 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       .attr('height', height + 20);
     // .attr('border', '1px solid steelblue');
 
-    const width = initialWidth - 70;
+    const width = initialWidth - 100;
     const { gray } = colors;
     let candleChartHeightRatio = 0.8;
 
@@ -104,7 +104,7 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
   }, []);
 
   return (
-    <div className="border-5 flex bg-red-300">
+    <div className="border-5 flex bg-red-300 m-4">
       <svg ref={svgRef} />
       {renderComplete && <Interaction svgRef={svgRef} data={data} height={height} />}
     </div>

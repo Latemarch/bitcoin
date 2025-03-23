@@ -37,19 +37,17 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
 
     // SVG 선택 및 초기화
     const svg = d3.select(svgRef.current);
-    const width = (divWidth || 1000) - 70;
-    console.log(width, zoomRef.current.k);
+    const width = (divWidth || 1000) - 100;
 
     svg.attr('width', divWidth);
 
+    const currentDomain = scaleRef.current.xDomain;
     const originalX = d3
       .scaleTime()
       .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
       .range([Math.min(0, width - 1000), width]);
 
-    const currentDomain = scaleRef.current.xDomain;
     const x = originalX.copy().domain(currentDomain);
-
     const firstDate = x.invert(0);
     const lastDate = x.invert(width);
     const visibleData = data.filter((d) => {
@@ -260,7 +258,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       .scaleExtent([1, 20])
       .translateExtent([
         [-100, 0],
-        [1100, height],
+        [1200, height],
       ])
       .on('zoom', handleZoom);
 
