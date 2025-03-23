@@ -129,7 +129,9 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
   return (
     <div className="border-5 flex bg-red-300" ref={divRef}>
       <svg ref={svgRef} />
-      {renderComplete && <Interaction svgRef={svgRef} data={data} height={height} />}
+      {renderComplete && (
+        <Interaction svgRef={svgRef} data={data} divWidth={divWidth} height={height} />
+      )}
     </div>
   );
 }

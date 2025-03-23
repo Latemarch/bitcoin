@@ -17,7 +17,7 @@ import { handleMouseLeave, handleMouseMove } from '@/lib/D3/candleChartInteracti
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
   data: BybitKline[];
-  //   divWidth: number;
+  divWidth: number;
   height: number;
   candleChartHeightRatio?: number;
 };
@@ -25,12 +25,12 @@ type Props = {
 export default function Interaction({
   svgRef,
   data,
-  //   divWidth,
+  divWidth,
   height,
   candleChartHeightRatio = 0.8,
 }: Props) {
-  const [divWidth, setDivWidth] = React.useState(0);
-  const divRef = React.useRef<HTMLDivElement>(null);
+  //   const [divWidth, setDivWidth] = React.useState(0);
+  //   const divRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!svgRef.current) return;
     const { gray } = colors;
@@ -245,16 +245,6 @@ export default function Interaction({
       listeningRect.remove();
     };
   }, [svgRef, divWidth, candleChartHeightRatio]);
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (!divRef.current) return;
-      const { width } = divRef.current.getBoundingClientRect();
-      setDivWidth(width);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
-  return <div className="border-5 flex h-full w-full" ref={divRef}></div>;
+  return <></>;
 }
