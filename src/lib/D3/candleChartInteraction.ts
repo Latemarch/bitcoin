@@ -5,8 +5,6 @@ import { BybitKline } from '@/types/type';
 
 export function handleMouseMove({
   event,
-  xIndex,
-  xRect,
   y,
   yVolume,
   width,
@@ -14,11 +12,11 @@ export function handleMouseMove({
   candleChartHeightRatio,
   svg,
   data,
+  x,
 }: {
   event: any;
-  xIndex: d3.ScaleLinear<number, number>;
-  xRect: d3.ScaleTime<number, number>;
   y: d3.ScaleLinear<number, number>;
+  x: d3.ScaleTime<number, number>;
   yVolume: d3.ScaleLinear<number, number>;
   width: number;
   height: number;
@@ -27,27 +25,29 @@ export function handleMouseMove({
   data: BybitKline[];
 }) {
   const [xCoord, yCoord] = d3.pointer(event);
-  const bisectDate = d3.bisector((d: any) => d.index).left;
-  const x0 = xIndex.invert(xCoord);
+  const bisectDate = d3.bisector((d: any) => d[0]).left;
+  const x0 = x.invert(xCoord);
   const i = bisectDate(data, x0);
+  console.log(i);
+
   const d0 = data[i - 1];
   const d1 = data[i];
-  if (!d0 || !d1) {
-    console.log('no data');
-    return;
-  }
-  const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
-  const xPos = xRect(d[0]);
+  //   if (!d0 || !d1) {
+  //     console.log('no data');
+  //     return;
+  //   }
+  //   const d = x0 < (d0[0] + d1[0]) / 2 ? d0 : d1;
+  const xPos = x(d0[0]);
   const yPos = yCoord;
 
-  d3.select('.candle-info').call((text) => writeCandleInfo(text, d));
-  d3.select('.price-indicator').attr('transform', `translate(${width}, ${yPos - 5})`);
+  //   d3.select('.candle-info').call((text) => writeCandleInfo(text, d));
+  //   d3.select('.price-indicator').attr('transform', `translate(${width}, ${yPos - 5})`);
 
-  const indicatorText =
-    yCoord < height * candleChartHeightRatio
-      ? y.invert(yCoord).toFixed(2)
-      : yVolume.invert(yCoord).toFixed(0);
-  d3.select('.price-indicator text').text(indicatorText);
+  //   const indicatorText =
+  //     yCoord < height * candleChartHeightRatio
+  //       ? y.invert(yCoord).toFixed(2)
+  //       : yVolume.invert(yCoord).toFixed(0);
+  //   d3.select('.price-indicator text').text(indicatorText);
 
   updateGuideLines({ svg, xPos, yPos, width, height });
 }

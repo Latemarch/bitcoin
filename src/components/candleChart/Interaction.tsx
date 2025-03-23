@@ -24,6 +24,13 @@ type Props = {
 export default function Interaction({ svgRef, data, height, candleChartHeightRatio = 0.8 }: Props) {
   const [divWidth, setDivWidth] = React.useState(0);
   const divRef = React.useRef<HTMLDivElement>(null);
+  const scaleRef = React.useRef({
+    x: d3.scaleTime(),
+    xIndex: d3.scaleLinear(),
+    y: d3.scaleLinear(),
+    yVolume: d3.scaleLinear(),
+    xDomain: [new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))],
+  });
   React.useEffect(() => {
     if (!svgRef.current) return;
     const { gray } = colors;
@@ -35,15 +42,15 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     svg.attr('width', divWidth);
 
     // 스케일 설정
-    const xIndex = d3
-      .scaleLinear()
-      .domain([0, data.length - 1])
-      .range([0, width]);
+    // const xIndex = d3
+    //   .scaleLinear()
+    //   .domain([0, data.length - 1])
+    //   .range([0, width]);
 
-    const xRect = d3
-      .scaleTime()
-      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
-      .range([0, width]);
+    // const xRect = d3
+    //   .scaleTime()
+    //   .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
+    //   .range([0, width]);
 
     const x = d3
       .scaleTime()
@@ -119,10 +126,9 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
           width,
           height,
           candleChartHeightRatio,
-          xIndex,
-          xRect,
           y,
           yVolume,
+          x,
         })
       )
       .on('mouseleave', handleMouseLeave);
@@ -131,12 +137,13 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     const handleZoom = ({ transform }: any) => {
       // const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
       const rescaleX = transform.rescaleX(x);
-      const rescaleXIndex = transform.rescaleX(xIndex);
+      //   const rescaleXIndex = transform.rescaleX(xIndex);
       const k = transform.k;
       // console.log(rescaleX, rescaleY);
 
       // Get visible domain
       const visibleDomain = rescaleX.domain();
+      scaleRef.current.xDomain = visibleDomain;
 
       // Filter data points within visible domain
       const visibleData = data.filter((d) => {
@@ -193,8 +200,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
           width,
           height,
           candleChartHeightRatio,
-          xIndex: rescaleXIndex,
-          xRect: rescaleX,
+          x: rescaleX,
           y: rescaleY,
           yVolume: rescaleYVolume,
         })
