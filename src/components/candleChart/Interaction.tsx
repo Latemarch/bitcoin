@@ -15,9 +15,8 @@ import {
 
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
-  divRef: React.RefObject<HTMLDivElement>;
   data: BybitKline[];
-  width: number;
+  divWidth: number;
   height: number;
   candleChartHeightRatio?: number;
 };
@@ -25,19 +24,19 @@ type Props = {
 export default function Interaction({
   svgRef,
   data,
-  width,
+  divWidth,
   height,
-  divRef,
   candleChartHeightRatio = 0.8,
 }: Props) {
-  const [divWidth, setDivWidth] = React.useState(1000);
-  const prevWidthRef = React.useRef(width);
+  //   const [divWidth, setDivWidth] = React.useState(1000);
+  const prevWidthRef = React.useRef(divWidth);
 
   React.useEffect(() => {
     if (!svgRef.current) return;
 
     // SVG 선택 및 초기화
     const svg = d3.select(svgRef.current);
+    const width = divWidth - 70;
 
     svg.attr('width', divWidth);
 
@@ -167,16 +166,16 @@ export default function Interaction({
   }, [svgRef, divWidth, candleChartHeightRatio]);
 
   // 창 크기 변경 감지
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (!divRef.current) return;
-      const { width } = divRef.current.getBoundingClientRect();
-      setDivWidth(width);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [divRef]);
+  //   React.useEffect(() => {
+  //     const handleResize = () => {
+  //       if (!divRef.current) return;
+  //       const { width } = divRef.current.getBoundingClientRect();
+  //       setDivWidth(width);
+  //     };
+  //     handleResize();
+  //     window.addEventListener('resize', handleResize);
+  //     return () => window.removeEventListener('resize', handleResize);
+  //   }, [divRef]);
 
   return null;
 }
