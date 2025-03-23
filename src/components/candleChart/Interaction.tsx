@@ -44,11 +44,12 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
 
     const originalX = d3
       .scaleTime()
-      .domain(scaleRef.current.xDomain)
+      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
       .range([Math.min(0, width - 1000), width]);
 
-    // 보이는 데이터 계산
-    const x = zoomRef.current.rescaleX(originalX);
+    const currentDomain = scaleRef.current.xDomain;
+    const x = originalX.copy().domain(currentDomain);
+
     const firstDate = x.invert(0);
     const lastDate = x.invert(width);
     const visibleData = data.filter((d) => {
@@ -141,7 +142,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
 
       // Get visible domain
       const visibleDomain = rescaleX.domain();
-      //   scaleRef.current.xDomain = visibleDomain;
+      scaleRef.current.xDomain = visibleDomain;
 
       // Filter data points within visible domain
       const visibleData = data.filter((d) => {
@@ -168,17 +169,17 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       //   scaleRef.current.y = rescaleY;
       //   scaleRef.current.yVolume = rescaleYVolume;
 
-      // updateAxis({
-      //   svg,
-      //   x: rescaleX,
-      //   y: rescaleY,
-      //   yVolume: rescaleYVolume,
-      //   width,
-      //   height,
-      //   xAxisGroup,
-      //   yAxisGroup,
-      //   yVolumeAxisGroup,
-      // });
+      updateAxis({
+        svg,
+        x: rescaleX,
+        y: rescaleY,
+        yVolume: rescaleYVolume,
+        width,
+        height,
+        xAxisGroup: d3.select('.x-axis') as any,
+        yAxisGroup: yAxisGroup as any,
+        yVolumeAxisGroup: yVolumeAxisGroup as any,
+      });
 
       // // Canvas에 캔들과 거래량 다시 그리기 - 고해상도 고려
       if (ctx) {
@@ -249,6 +250,10 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       // });
     };
 
+    // 현재 보이는 도메인의 중심점 계산
+    // const currentDomain = scaleRef.current.xDomain;
+    // const domainCenter = new Date((currentDomain[0].getTime() + currentDomain[1].getTime()) / 2);
+
     // zoom 객체 새로 생성 - 매번 새로운 인스턴스를 만들어 이전 상태 제거
     const zoom = d3
       .zoom()
@@ -259,8 +264,10 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       ])
       .on('zoom', handleZoom);
 
+    svg.call(zoom as any);
+
     // 기존 zoom 이벤트 핸들러 제거 후 새 zoom 객체 적용
-    svg.call(zoom as any, d3.zoomIdentity);
+    // svg.call(zoom as any);
 
     // 클린업 함수
     return () => {
