@@ -18,8 +18,6 @@ type Props = {
 
 export default function ChartLayout({ initialWidth = 1000, height = 500, data }: Props) {
   const svgRef = React.useRef<SVGSVGElement>(null);
-  const divRef = React.useRef<HTMLDivElement>(null);
-  const [divWidth, setDivWidth] = React.useState(initialWidth);
   const [renderComplete, setRenderComplete] = React.useState(false);
 
   React.useEffect(() => {
@@ -30,11 +28,11 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
     const svg = d3
       .select(svgRef.current)
       .attr('class', 'bg-bgPrimary')
-      .attr('width', divWidth)
+      .attr('width', initialWidth)
       .attr('height', height + 20);
     // .attr('border', '1px solid steelblue');
 
-    const width = divWidth - 70;
+    const width = initialWidth - 70;
     const { gray } = colors;
     let candleChartHeightRatio = 0.8;
 
@@ -93,17 +91,7 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       .style('fill', gray)
       .style('text-anchor', 'start');
     //
-    updateAxis({
-      svg,
-      x,
-      y,
-      yVolume,
-      width,
-      height,
-      xAxisGroup,
-      yAxisGroup,
-      yVolumeAxisGroup,
-    });
+
     createGuideLines(svg);
     createIndicators(svg, width, height, 1);
 
@@ -113,25 +101,12 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       svg.selectAll('*').remove();
       setRenderComplete(false);
     };
-  }, [divWidth]);
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (!divRef.current) return;
-      const { width } = divRef.current.getBoundingClientRect();
-      setDivWidth(width);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
-    <div className="border-5 flex bg-red-300" ref={divRef}>
+    <div className="border-5 flex bg-red-300">
       <svg ref={svgRef} />
-      {renderComplete && (
-        <Interaction svgRef={svgRef} data={data} divWidth={divWidth} height={height} />
-      )}
+      {renderComplete && <Interaction svgRef={svgRef} data={data} height={height} />}
     </div>
   );
 }

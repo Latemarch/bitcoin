@@ -17,27 +17,20 @@ import { handleMouseLeave, handleMouseMove } from '@/lib/D3/candleChartInteracti
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
   data: BybitKline[];
-  divWidth: number;
   height: number;
   candleChartHeightRatio?: number;
 };
 
-export default function Interaction({
-  svgRef,
-  data,
-  divWidth,
-  height,
-  candleChartHeightRatio = 0.8,
-}: Props) {
-  //   const [divWidth, setDivWidth] = React.useState(0);
-  //   const divRef = React.useRef<HTMLDivElement>(null);
+export default function Interaction({ svgRef, data, height, candleChartHeightRatio = 0.8 }: Props) {
+  const [divWidth, setDivWidth] = React.useState(0);
+  const divRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!svgRef.current) return;
     const { gray } = colors;
 
     // SVG 선택 및 초기화
     const svg = d3.select(svgRef.current);
-    const width = divWidth - 70;
+    const width = (divWidth || 1000) - 70;
 
     svg.attr('width', divWidth);
 
@@ -80,23 +73,23 @@ export default function Interaction({
       .domain([0, volumeMax])
       .range([height, height * candleChartHeightRatio + 4]);
 
-    // const baseLineX = d3.select('.base-line-y').attr('x1', width).attr('x2', width);
-    // const yAxisGroup = d3.select('.y-axis').attr('transform', `translate(${width}, 0)`);
-    // const yVolumeAxisGroup = d3
-    //   .select('.y-volume-axis')
-    //   .attr('transform', `translate(${width}, 0)`);
-    // // 축 업데이트
-    // updateAxis({
-    //   svg,
-    //   x,
-    //   y,
-    //   yVolume,
-    //   width,
-    //   height,
-    //   xAxisGroup: d3.select('.x-axis') as any,
-    //   yAxisGroup: yAxisGroup as any,
-    //   yVolumeAxisGroup: yVolumeAxisGroup as any,
-    // });
+    const baseLineX = d3.select('.base-line-y').attr('x1', width).attr('x2', width);
+    const yAxisGroup = d3.select('.y-axis').attr('transform', `translate(${width}, 0)`);
+    const yVolumeAxisGroup = d3
+      .select('.y-volume-axis')
+      .attr('transform', `translate(${width}, 0)`);
+    // 축 업데이트
+    updateAxis({
+      svg,
+      x,
+      y,
+      yVolume,
+      width,
+      height,
+      xAxisGroup: d3.select('.x-axis') as any,
+      yAxisGroup: yAxisGroup as any,
+      yVolumeAxisGroup: yVolumeAxisGroup as any,
+    });
 
     // Canvas 생성 및 캔들/볼륨 그리기
     // createCanvasInSVG 내부에서 기존 foreignObject 요소를 제거함
@@ -134,6 +127,7 @@ export default function Interaction({
       )
       .on('mouseleave', handleMouseLeave);
 
+    // --------------------------------------------- zoom 이벤트 처리
     const handleZoom = ({ transform }: any) => {
       // const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
       const rescaleX = transform.rescaleX(x);
@@ -191,6 +185,21 @@ export default function Interaction({
 
       // svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
 
+      listeningRect.on('mousemove', (event) =>
+        handleMouseMove({
+          event,
+          data: visibleData,
+          svg,
+          width,
+          height,
+          candleChartHeightRatio,
+          xIndex: rescaleXIndex,
+          xRect: rescaleX,
+          y: rescaleY,
+          yVolume: rescaleYVolume,
+        })
+      );
+
       // listeningRect.on('mousemove', (e) => {
       //   // const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
       //   const [xCoord, yCoord] = d3.pointer(e);
@@ -246,5 +255,16 @@ export default function Interaction({
     };
   }, [svgRef, divWidth, candleChartHeightRatio]);
 
-  return <></>;
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (!divRef.current) return;
+      const { width } = divRef.current.getBoundingClientRect();
+      setDivWidth(width);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return <div className="absolute inset-0 pointer-events-none" ref={divRef}></div>;
 }
