@@ -204,7 +204,7 @@ export default function Interaction({
       //   const xPos = rescaleX(d[0]);
       //   const yPos = yCoord;
 
-      //   updateGuideLines({ svg, xPos, yPos, width, height });
+      // updateGuideLines({ svg, xPos, yPos, width, height });
       //   candleInfo.call((text) => writeCandleInfo(text, d));
 
       //   priceIndicator.attr('transform', `translate(${width}, ${yPos - 5})`);
