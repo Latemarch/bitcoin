@@ -139,6 +139,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       //   console.log(k);
 
       // Get visible domain
+      //   const newX = transform.rescaleX(x);
       const visibleDomain = rescaleX.domain();
       scaleRef.current.xDomain = visibleDomain;
 
@@ -152,6 +153,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       const visibleMax = Number(d3.max(visibleData, (d) => d[2])) + 10;
       const visibleMin = Number(d3.min(visibleData, (d) => d[3])) - 10;
       const visibleVolumeMax = Number(d3.max(visibleData, (d) => d[5]));
+      //   console.log(visibleDomain, visibleMax, visibleMin);
 
       const rescaleY = d3
         .scaleLinear()
