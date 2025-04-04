@@ -16,6 +16,7 @@ const config: Config = {
         redPrimary: '#EF454A',
         greenPrimary: '#1EB26B',
         bgPrimary: '#101015',
+        grayPrimary: '#71757A',
       },
     },
   },
