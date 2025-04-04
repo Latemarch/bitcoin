@@ -328,7 +328,7 @@ export function createBaseLine(
     .attr('class', 'base-line-x')
     .attr('x1', 0)
     .attr('y1', height)
-    .attr('x2', width * 2)
+    .attr('x2', width * 5)
     .attr('y2', height)
     .style('stroke', 'white')
     .style('stroke-width', 1);
@@ -337,7 +337,7 @@ export function createBaseLine(
     .attr('class', 'base-line-x')
     .attr('x1', 0)
     .attr('y1', height * candleChartHeightRatio)
-    .attr('x2', width * 2)
+    .attr('x2', width * 5)
     .attr('y2', height * candleChartHeightRatio)
     .style('stroke', 'white')
     .style('stroke-width', 1);
