@@ -10,6 +10,7 @@ import {
   updateAxis,
 } from '@/lib/D3/candlesChart';
 import Interaction from './Interaction';
+import Update from './Update';
 type Props = {
   initialWidth?: number;
   height?: number;
@@ -107,6 +108,7 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
     <div className="border-5 flex bg-red-300 m-4">
       <svg ref={svgRef} />
       {renderComplete && <Interaction svgRef={svgRef} data={data} height={height} />}
+      {renderComplete && <Update svgRef={svgRef} data={data} height={height} />}
     </div>
   );
 }

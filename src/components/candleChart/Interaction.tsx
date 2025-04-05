@@ -14,6 +14,8 @@ import {
   writeCandleInfo,
 } from '@/lib/D3/candlesChart';
 import { handleMouseLeave, handleMouseMove } from '@/lib/D3/candleChartInteraction';
+import { drawMovingAverage } from '@/lib/D3/movingAgerage';
+import { calculateMovingAverage } from '@/lib/getMovingAverage';
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
   data: BybitKline[];
@@ -100,6 +102,13 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     const { ctx } = createCanvasInSVG(svg, width, height);
     drawCandlesOnCanvas(ctx, data, x, y, candleWidth);
     drawVolumeOnCanvas(ctx, data, x, yVolume, candleWidth, height);
+    const movingAverageData = calculateMovingAverage(data, 5);
+    const ma10Data = calculateMovingAverage(data, 10);
+    const ma20Data = calculateMovingAverage(data, 20);
+
+    drawMovingAverage(ctx, movingAverageData, x, y, colors.gray);
+    drawMovingAverage(ctx, ma10Data, x, y, colors.blue);
+    drawMovingAverage(ctx, ma20Data, x, y, colors.red);
 
     const listeningRect = svg
       .append('rect')
@@ -193,6 +202,9 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
         // 선명한 렌더링을 위해 업데이트된 함수 사용
         drawCandlesOnCanvas(ctx, data, rescaleX, rescaleY, zoomedCandleWidth);
         drawVolumeOnCanvas(ctx, data, rescaleX, rescaleYVolume, zoomedCandleWidth, height);
+        drawMovingAverage(ctx, movingAverageData, rescaleX, rescaleY, colors.gray);
+        drawMovingAverage(ctx, ma10Data, rescaleX, rescaleY, colors.blue);
+        drawMovingAverage(ctx, ma20Data, rescaleX, rescaleY, colors.red);
       }
 
       // svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);

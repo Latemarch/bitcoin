@@ -5,17 +5,6 @@ import * as d3 from 'd3';
 const isServer = () => typeof window === 'undefined';
 
 export function createCanvasInSVG(svg: any, width: number, height: number) {
-  // 서버 환경에서는 더미 객체 반환
-  if (isServer()) {
-    console.log('Server environment detected, returning mock canvas');
-    return {
-      foreignObject: svg.append('g'),
-      canvas: null,
-      ctx: null,
-      pixelRatio: 1,
-    };
-  }
-
   // 기존에 있던 foreignObject 요소 제거
   svg.selectAll('foreignObject').remove();
 
@@ -275,6 +264,7 @@ export const colors = {
   red: '#EF454A',
   green: '#1EB26B',
   gray: '#71757A',
+  blue: '#007AFF',
 };
 
 type Props = {
