@@ -259,8 +259,8 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       .zoom()
       .scaleExtent([1, 20])
       .translateExtent([
-        [-100, 0],
-        [1200, height],
+        [-10, 0],
+        [divWidth + 10, height],
       ])
       .on('zoom', handleZoom);
 
