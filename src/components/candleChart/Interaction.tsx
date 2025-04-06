@@ -16,6 +16,7 @@ import {
 import { handleMouseLeave, handleMouseMove } from '@/lib/D3/candleChartInteraction';
 import { drawMovingAverage } from '@/lib/D3/movingAgerage';
 import { calculateMovingAverage } from '@/lib/getMovingAverage';
+import { calculateBollingerBands, drawBollingerBands } from '@/lib/D3/bollingerBands';
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
   data: BybitKline[];
@@ -109,6 +110,9 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     drawMovingAverage(ctx, movingAverageData, x, y, colors.gray);
     drawMovingAverage(ctx, ma10Data, x, y, colors.blue);
     drawMovingAverage(ctx, ma20Data, x, y, colors.red);
+
+    const bollingerBandData = calculateBollingerBands(data, 20);
+    drawBollingerBands(ctx, bollingerBandData, x, y, colors.green);
 
     const listeningRect = svg
       .append('rect')
@@ -205,6 +209,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
         drawMovingAverage(ctx, movingAverageData, rescaleX, rescaleY, colors.gray);
         drawMovingAverage(ctx, ma10Data, rescaleX, rescaleY, colors.blue);
         drawMovingAverage(ctx, ma20Data, rescaleX, rescaleY, colors.red);
+        drawBollingerBands(ctx, bollingerBandData, rescaleX, rescaleY, colors.green);
       }
 
       // svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
@@ -285,6 +290,7 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     return () => {
       listeningRect.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [svgRef, divWidth, candleChartHeightRatio]);
 
   React.useEffect(() => {

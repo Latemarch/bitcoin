@@ -102,10 +102,11 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       svg.selectAll('*').remove();
       setRenderComplete(false);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="border-5 flex bg-red-300 m-4">
+    <div className="border-5 flex bg-red-300">
       <svg ref={svgRef} />
       {renderComplete && <Interaction svgRef={svgRef} data={data} height={height} />}
       {renderComplete && <Update svgRef={svgRef} data={data} height={height} />}
