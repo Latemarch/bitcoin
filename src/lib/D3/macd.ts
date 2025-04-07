@@ -80,7 +80,8 @@ export function drawMACD(
   macdData: MACDData[],
   x: any,
   y: any,
-  zeroLineY: number
+  zeroLineY: number,
+  candleWidth: number = 4
 ) {
   if (!ctx || macdData.length === 0) return;
 
@@ -105,13 +106,14 @@ export function drawMACD(
   ctx.stroke();
 
   // 히스토그램 그리기
+  const histogramWidth = candleWidth; // 캔들 너비의 80%로 설정하되 최소 1px
   for (let i = 0; i < macdData.length; i++) {
     const xPos = x(new Date(macdData[i].timestamp));
     const height = Math.abs(y(macdData[i].histogram) - y(0));
     const yPos = macdData[i].histogram > 0 ? y(macdData[i].histogram) : y(0);
 
     ctx.fillStyle = macdData[i].histogram > 0 ? colors.green : colors.red;
-    ctx.fillRect(xPos - 2, yPos, 4, height);
+    ctx.fillRect(xPos - histogramWidth / 2, yPos, histogramWidth, height);
   }
 
   // 제로 라인 그리기

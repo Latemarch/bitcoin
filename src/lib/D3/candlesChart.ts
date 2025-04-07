@@ -314,7 +314,8 @@ export function createBaseLine(
   svg: any,
   width: number,
   height: number,
-  candleChartHeightRatio: number
+  candleChartHeightRatio: number,
+  volumeChartHeightRatio: number
 ) {
   const baseLineX = svg
     .append('line')
@@ -335,6 +336,16 @@ export function createBaseLine(
     .style('stroke', 'white')
     .style('stroke-width', 1);
 
+  const splitLineX2 = svg
+    .append('line')
+    .attr('class', 'base-line-x')
+    .attr('x1', 0)
+    .attr('y1', height * volumeChartHeightRatio)
+    .attr('x2', width * 5)
+    .attr('y2', height * volumeChartHeightRatio)
+    .style('stroke', 'white')
+    .style('stroke-width', 1);
+
   const baseLineY = svg
     .append('line')
     .attr('class', 'base-line-y')
@@ -345,7 +356,7 @@ export function createBaseLine(
     .style('stroke', 'white')
     .style('stroke-width', 1);
 
-  return { baseLineX, splitLineX, baseLineY };
+  return { baseLineX, splitLineX, splitLineX2, baseLineY };
 }
 
 /**

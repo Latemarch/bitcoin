@@ -81,7 +81,7 @@ export default function Interaction({
     const yVolume = d3
       .scaleLinear()
       .domain([0, volumeMax])
-      .range([height, height * candleChartHeightRatio + 4]);
+      .range([height, height * volumeChartHeightRatio + 4]);
 
     const baseLineX = d3.select('.base-line-y').attr('x1', width).attr('x2', width);
     const yAxisGroup = d3.select('.y-axis').attr('transform', `translate(${width}, 0)`);
@@ -105,13 +105,28 @@ export default function Interaction({
       yVolumeAxisGroup: yVolumeAxisGroup as any,
     });
 
-    // Canvas 생성 및 캔들/볼륨 그리기
-    // createCanvasInSVG 내부에서 기존 foreignObject 요소를 제거함
+    // MACD 데이터 계산
+    const macdData = calculateMACD(data);
 
+    // MACD를 위한 y축 스케일 설정
+    const macdMax = Math.max(...macdData.map((d) => Math.max(d.macd, d.signal)));
+    const macdMin = Math.min(...macdData.map((d) => Math.min(d.macd, d.signal)));
+    const macdFluctuation = Math.max(macdMax, -macdMin) * 1.2;
+
+    const yMACD = d3
+      .scaleLinear()
+      .domain([-macdFluctuation, macdFluctuation])
+      .range([height * volumeChartHeightRatio, height * candleChartHeightRatio]);
+
+    // 캔들 너비 계산
     const candleWidth = (x(new Date(Number(data[1][0]))) - x(new Date(Number(data[0][0])))) * 0.8;
+
+    // Canvas 생성 및 캔들/볼륨/MACD 그리기
     const { ctx } = createCanvasInSVG(svg, width, height);
     drawCandlesOnCanvas(ctx, data, x, y, candleWidth);
     drawVolumeOnCanvas(ctx, data, x, yVolume, candleWidth, height);
+    drawMACD(ctx, macdData, x, yMACD, yMACD(0), candleWidth);
+
     const movingAverageData = calculateMovingAverage(data, 5);
     const ma10Data = calculateMovingAverage(data, 10);
     const ma20Data = calculateMovingAverage(data, 20);
@@ -122,9 +137,6 @@ export default function Interaction({
 
     const bollingerBandData = calculateBollingerBands(data, 20);
     drawBollingerBands(ctx, bollingerBandData, x, y, colors.green);
-
-    // const macdData = calculateMACD(data);
-    // drawMACD(ctx, macdData, x, y, y(0));
 
     const listeningRect = svg
       .append('rect')
@@ -188,7 +200,7 @@ export default function Interaction({
       const rescaleYVolume = d3
         .scaleLinear()
         .domain([0, visibleVolumeMax])
-        .range([height, height * candleChartHeightRatio + 4]);
+        .range([height, height * volumeChartHeightRatio + 4]);
 
       //   scaleRef.current.x = rescaleX;
       //   scaleRef.current.y = rescaleY;
@@ -208,11 +220,9 @@ export default function Interaction({
 
       // // Canvas에 캔들과 거래량 다시 그리기 - 고해상도 고려
       if (ctx) {
-        // ctx.clearRect(0, 0, width, height);
+        ctx.clearRect(0, 0, width, height);
 
         // 줌 상태에 따라 캔들 너비 조정
-        const candleWidth =
-          (originalX(new Date(Number(data[1][0]))) - originalX(new Date(Number(data[0][0])))) * 0.8;
         const zoomedCandleWidth = candleWidth * transform.k;
 
         // 선명한 렌더링을 위해 업데이트된 함수 사용
@@ -222,6 +232,23 @@ export default function Interaction({
         drawMovingAverage(ctx, ma10Data, rescaleX, rescaleY, colors.blue);
         drawMovingAverage(ctx, ma20Data, rescaleX, rescaleY, colors.red);
         drawBollingerBands(ctx, bollingerBandData, rescaleX, rescaleY, colors.green);
+
+        // MACD 다시 계산 및 그리기
+        const visibleMACDData = macdData.filter((d) => {
+          const date = new Date(d.timestamp);
+          return date >= visibleDomain[0] && date <= visibleDomain[1];
+        });
+
+        const visibleMACDMax = Math.max(...visibleMACDData.map((d) => Math.max(d.macd, d.signal)));
+        const visibleMACDMin = Math.min(...visibleMACDData.map((d) => Math.min(d.macd, d.signal)));
+        const visibleMACDFluctuation = Math.max(visibleMACDMax, -visibleMACDMin) * 1.2;
+
+        const rescaleYMACD = d3
+          .scaleLinear()
+          .domain([-visibleMACDFluctuation, visibleMACDFluctuation])
+          .range([height * volumeChartHeightRatio, height * candleChartHeightRatio]);
+
+        drawMACD(ctx, visibleMACDData, rescaleX, rescaleYMACD, rescaleYMACD(0), zoomedCandleWidth);
       }
 
       // svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
