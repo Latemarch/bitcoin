@@ -27,7 +27,7 @@ type Props = {
   volumeChartHeightRatio?: number;
 };
 
-export default function Interaction({
+export default function Draw({
   svgRef,
   data,
   height,

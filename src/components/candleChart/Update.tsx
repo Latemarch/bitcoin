@@ -12,6 +12,7 @@ export default function Update({ svgRef, data, height, width }: Props) {
   useEffect(() => {
     if (!svgRef.current) return;
     // SVG 선택 및 초기화
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <div></div>;
 }
