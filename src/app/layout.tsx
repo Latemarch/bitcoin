@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { HeroUIProviders } from '@/provider/HeroUIProviders';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -17,8 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="fixed inset-0 bg-bgPrimary"> </div>
-        <div className="relative z-10">{children}</div>
+        <HeroUIProviders>
+          <div className="fixed inset-0 bg-bgPrimary"> </div>
+          <div className="relative z-10">{children}</div>
+        </HeroUIProviders>
       </body>
     </html>
   );

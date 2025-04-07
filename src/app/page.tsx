@@ -3,7 +3,7 @@ import CandleChartContainer from '@/components/CandleChartContainer';
 
 export default function Home() {
   return (
-    <div className="">
+    <div className="flex items-center ">
       <Container />
     </div>
   );

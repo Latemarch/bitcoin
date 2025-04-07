@@ -9,12 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroui/react": "^2.7.5",
     "@prisma/client": "^5.17.0",
     "axios": "^1.7.2",
     "bybit-api": "^3.11.0",
     "d3": "^7.9.0",
     "echarts": "^5.5.1",
     "echarts-for-react": "^3.0.2",
+    "framer-motion": "^12.6.3",
     "jsdom": "^26.0.0",
     "next": "14.2.5",
     "react": "^18",

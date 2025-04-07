@@ -17,14 +17,23 @@ import { handleMouseLeave, handleMouseMove } from '@/lib/D3/candleChartInteracti
 import { drawMovingAverage } from '@/lib/D3/movingAgerage';
 import { calculateMovingAverage } from '@/lib/getMovingAverage';
 import { calculateBollingerBands, drawBollingerBands } from '@/lib/D3/bollingerBands';
+import { calculateVWAP, drawVWAP } from '@/lib/D3/VWAP';
+import { calculateMACD, drawMACD } from '@/lib/D3/macd';
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
   data: BybitKline[];
   height: number;
   candleChartHeightRatio?: number;
+  volumeChartHeightRatio?: number;
 };
 
-export default function Interaction({ svgRef, data, height, candleChartHeightRatio = 0.8 }: Props) {
+export default function Interaction({
+  svgRef,
+  data,
+  height,
+  candleChartHeightRatio = 0.6,
+  volumeChartHeightRatio = 0.8,
+}: Props) {
   const [divWidth, setDivWidth] = React.useState(0);
   const divRef = React.useRef<HTMLDivElement>(null);
   const zoomRef = React.useRef<any>(d3.zoomIdentity);
@@ -59,8 +68,8 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     });
 
     // 가격/볼륨 스케일 설정
-    const maxPrice = Number(d3.max(visibleData, (d) => d[2])) + 10;
-    const minPrice = Number(d3.min(visibleData, (d) => d[3])) - 10;
+    const maxPrice = Number(d3.max(visibleData, (d) => d[2])) + 100;
+    const minPrice = Number(d3.min(visibleData, (d) => d[3])) - 100;
     const volumeMax = Number(d3.max(visibleData, (d) => d[5]));
 
     const y = d3
@@ -114,6 +123,9 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
     const bollingerBandData = calculateBollingerBands(data, 20);
     drawBollingerBands(ctx, bollingerBandData, x, y, colors.green);
 
+    // const macdData = calculateMACD(data);
+    // drawMACD(ctx, macdData, x, y, y(0));
+
     const listeningRect = svg
       .append('rect')
       .attr('class', 'listening-rect')
@@ -163,8 +175,8 @@ export default function Interaction({ svgRef, data, height, candleChartHeightRat
       });
 
       // Recalculate y scale based on visible data
-      const visibleMax = Number(d3.max(visibleData, (d) => d[2])) + 10;
-      const visibleMin = Number(d3.min(visibleData, (d) => d[3])) - 10;
+      const visibleMax = Number(d3.max(visibleData, (d) => d[2])) + 150;
+      const visibleMin = Number(d3.min(visibleData, (d) => d[3])) - 150;
       const visibleVolumeMax = Number(d3.max(visibleData, (d) => d[5]));
       //   console.log(visibleDomain, visibleMax, visibleMin);
 

@@ -20,7 +20,8 @@ type Props = {
 export default function ChartLayout({ initialWidth = 1000, height = 500, data }: Props) {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const [renderComplete, setRenderComplete] = React.useState(false);
-
+  let candleChartHeightRatio = 0.6;
+  let volumeChartHeightRatio = 0.8;
   React.useEffect(() => {
     if (!svgRef.current) return;
 
@@ -35,7 +36,6 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
 
     const width = initialWidth - 100;
     const { gray } = colors;
-    let candleChartHeightRatio = 0.8;
 
     createBaseLine(svg, width, height, candleChartHeightRatio);
 
@@ -106,10 +106,20 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
   }, []);
 
   return (
-    <div className="border-5 flex bg-red-300">
+    <div className="">
       <svg ref={svgRef} />
-      {renderComplete && <Interaction svgRef={svgRef} data={data} height={height} />}
-      {renderComplete && <Update svgRef={svgRef} data={data} height={height} />}
+      {renderComplete && (
+        <Interaction
+          svgRef={svgRef}
+          data={data}
+          height={height}
+          candleChartHeightRatio={candleChartHeightRatio}
+          volumeChartHeightRatio={volumeChartHeightRatio}
+        />
+      )}
+      {renderComplete && (
+        <Update svgRef={svgRef} data={data} height={height} width={initialWidth} />
+      )}
     </div>
   );
 }
