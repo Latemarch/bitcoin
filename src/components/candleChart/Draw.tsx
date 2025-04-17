@@ -126,6 +126,7 @@ export default function Draw({
     drawCandlesOnCanvas(ctx, data, x, y, candleWidth);
     drawVolumeOnCanvas(ctx, data, x, yVolume, candleWidth, height);
     drawMACD(ctx, macdData, x, yMACD, yMACD(0), candleWidth);
+    console.log(macdData, 'macd');
 
     const movingAverageData = calculateMovingAverage(data, 5);
     const ma10Data = calculateMovingAverage(data, 10);
@@ -158,8 +159,10 @@ export default function Draw({
           width,
           height,
           candleChartHeightRatio,
+          volumeChartHeightRatio,
           y,
           yVolume,
+          yMACD,
           x,
         })
       )
@@ -202,6 +205,20 @@ export default function Draw({
         .domain([0, visibleVolumeMax])
         .range([height, height * volumeChartHeightRatio + 4]);
 
+      // MACD 다시 계산 및 그리기
+      const visibleMACDData = macdData.filter((d) => {
+        const date = new Date(d.timestamp);
+        return date >= visibleDomain[0] && date <= visibleDomain[1];
+      });
+
+      const visibleMACDMax = Math.max(...visibleMACDData.map((d) => Math.max(d.macd, d.signal)));
+      const visibleMACDMin = Math.min(...visibleMACDData.map((d) => Math.min(d.macd, d.signal)));
+      const visibleMACDFluctuation = Math.max(visibleMACDMax, -visibleMACDMin) * 1.2;
+
+      const rescaleYMACD = d3
+        .scaleLinear()
+        .domain([-visibleMACDFluctuation, visibleMACDFluctuation])
+        .range([height * volumeChartHeightRatio, height * candleChartHeightRatio]);
       //   scaleRef.current.x = rescaleX;
       //   scaleRef.current.y = rescaleY;
       //   scaleRef.current.yVolume = rescaleYVolume;
@@ -234,39 +251,29 @@ export default function Draw({
         drawBollingerBands(ctx, bollingerBandData, rescaleX, rescaleY, colors.green);
 
         // MACD 다시 계산 및 그리기
-        const visibleMACDData = macdData.filter((d) => {
-          const date = new Date(d.timestamp);
-          return date >= visibleDomain[0] && date <= visibleDomain[1];
-        });
-
-        const visibleMACDMax = Math.max(...visibleMACDData.map((d) => Math.max(d.macd, d.signal)));
-        const visibleMACDMin = Math.min(...visibleMACDData.map((d) => Math.min(d.macd, d.signal)));
-        const visibleMACDFluctuation = Math.max(visibleMACDMax, -visibleMACDMin) * 1.2;
-
-        const rescaleYMACD = d3
-          .scaleLinear()
-          .domain([-visibleMACDFluctuation, visibleMACDFluctuation])
-          .range([height * volumeChartHeightRatio, height * candleChartHeightRatio]);
 
         drawMACD(ctx, visibleMACDData, rescaleX, rescaleYMACD, rescaleYMACD(0), zoomedCandleWidth);
       }
 
       // svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
 
-      listeningRect.on('mousemove', (event) =>
-        handleMouseMove({
-          event,
-          data: visibleData,
-          svg,
-          width,
-          height,
-          candleChartHeightRatio,
-          x: rescaleX,
-          y: rescaleY,
-          yVolume: rescaleYVolume,
-        })
-      );
-
+      listeningRect
+        .on('mousemove', (event) =>
+          handleMouseMove({
+            event,
+            data: visibleData,
+            svg,
+            width,
+            height,
+            candleChartHeightRatio,
+            volumeChartHeightRatio,
+            x: rescaleX,
+            y: rescaleY,
+            yVolume: rescaleYVolume,
+            yMACD: rescaleYMACD,
+          })
+        )
+        .on('mouseleave', handleMouseLeave);
       // listeningRect.on('mousemove', (e) => {
       //   // const { rescaleX, rescaleXIndex, rescaleY, rescaleYVolume } = scaleRef.current;
       //   const [xCoord, yCoord] = d3.pointer(e);

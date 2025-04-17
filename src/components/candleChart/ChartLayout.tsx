@@ -22,7 +22,7 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
   const [renderComplete, setRenderComplete] = React.useState(false);
   let candleChartHeightRatio = 0.6;
   let volumeChartHeightRatio = 0.8;
-  let macdChartHeightRatio = 0.2;
+
   React.useEffect(() => {
     if (!svgRef.current) return;
 
@@ -44,26 +44,6 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       .scaleTime()
       .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
       .range([Math.min(0, width - initialWidth), width]);
-
-    const firstDate = x.invert(0);
-    const lastDate = x.invert(width);
-    const visibleData = data.filter((d) => {
-      const date = new Date(d[0]);
-      return date >= firstDate && date <= lastDate;
-    });
-
-    // const maxPrice = Number(d3.max(visibleData, (d) => d[2])) + 10; // high
-    // const minPrice = Number(d3.min(visibleData, (d) => d[3])) - 10; // low
-    // const volumeMax = Number(d3.max(visibleData, (d) => d[5]));
-    // const y = d3
-    //   .scaleLinear()
-    //   .domain([minPrice, maxPrice])
-    //   .range([height * candleChartHeightRatio, 0]);
-
-    // const yVolume = d3
-    //   .scaleLinear()
-    //   .domain([0, volumeMax])
-    //   .range([height * volumeChartHeightRatio, height * candleChartHeightRatio + 4]);
 
     const yVolumeAxisGroup = svg
       .append('g')
