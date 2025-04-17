@@ -3,12 +3,12 @@ import { BybitKline } from '@/types/type';
 
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
-  data: BybitKline[];
+  candleData: BybitKline[];
   height: number;
   width: number;
 };
 
-export default function Update({ svgRef, data, height, width }: Props) {
+export default function Update({ svgRef, candleData, height, width }: Props) {
   useEffect(() => {
     if (!svgRef.current) return;
     // SVG 선택 및 초기화

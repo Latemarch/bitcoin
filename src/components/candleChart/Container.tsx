@@ -5,15 +5,15 @@ import { BybitKline } from '@/types/type';
 import ChartLayout from './ChartLayout';
 
 export default function Container() {
-  const [data, setData] = React.useState<BybitKline[]>([]);
+  const [candleData, setCandleData] = React.useState<BybitKline[]>([]);
 
   React.useEffect(() => {
     const fetchData = async () => {
       const res = await getRecentCandles({});
-      if (res.ok) setData(res.data);
+      if (res.ok) setCandleData(res.data);
     };
     fetchData();
   }, []);
 
-  return <div>{data.length && <ChartLayout data={data} />}</div>;
+  return <div>{candleData.length && <ChartLayout candleData={candleData} />}</div>;
 }

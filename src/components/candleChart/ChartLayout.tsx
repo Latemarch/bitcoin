@@ -14,10 +14,10 @@ import Draw from './Draw';
 type Props = {
   initialWidth?: number;
   height?: number;
-  data: BybitKline[];
+  candleData: BybitKline[];
 };
 
-export default function ChartLayout({ initialWidth = 1000, height = 500, data }: Props) {
+export default function ChartLayout({ initialWidth = 1000, height = 500, candleData }: Props) {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const [renderComplete, setRenderComplete] = React.useState(false);
   let candleChartHeightRatio = 0.6;
@@ -42,7 +42,10 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
 
     const x = d3
       .scaleTime()
-      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
+      .domain([
+        new Date(Number(candleData[0][0])),
+        new Date(Number(candleData[candleData.length - 1][0])),
+      ])
       .range([Math.min(0, width - initialWidth), width]);
 
     const yVolumeAxisGroup = svg
@@ -92,14 +95,14 @@ export default function ChartLayout({ initialWidth = 1000, height = 500, data }:
       {renderComplete && (
         <Draw
           svgRef={svgRef}
-          data={data}
+          candleData={candleData}
           height={height}
           candleChartHeightRatio={candleChartHeightRatio}
           volumeChartHeightRatio={volumeChartHeightRatio}
         />
       )}
       {renderComplete && (
-        <Update svgRef={svgRef} data={data} height={height} width={initialWidth} />
+        <Update svgRef={svgRef} candleData={candleData} height={height} width={initialWidth} />
       )}
     </div>
   );

@@ -21,7 +21,7 @@ import { calculateVWAP, drawVWAP } from '@/lib/D3/VWAP';
 import { calculateMACD, drawMACD } from '@/lib/D3/macd';
 type Props = {
   svgRef: React.RefObject<SVGSVGElement>;
-  data: BybitKline[];
+  candleData: BybitKline[];
   height: number;
   candleChartHeightRatio?: number;
   volumeChartHeightRatio?: number;
@@ -29,7 +29,7 @@ type Props = {
 
 export default function Draw({
   svgRef,
-  data,
+  candleData,
   height,
   candleChartHeightRatio = 0.6,
   volumeChartHeightRatio = 0.8,
@@ -42,7 +42,10 @@ export default function Draw({
     xIndex: d3.scaleLinear(),
     y: d3.scaleLinear(),
     yVolume: d3.scaleLinear(),
-    xDomain: [new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))],
+    xDomain: [
+      new Date(Number(candleData[0][0])),
+      new Date(Number(candleData[candleData.length - 1][0])),
+    ],
   });
   React.useEffect(() => {
     if (!svgRef.current) return;
@@ -56,21 +59,24 @@ export default function Draw({
     const currentDomain = scaleRef.current.xDomain;
     const originalX = d3
       .scaleTime()
-      .domain([new Date(Number(data[0][0])), new Date(Number(data[data.length - 1][0]))])
+      .domain([
+        new Date(Number(candleData[0][0])),
+        new Date(Number(candleData[candleData.length - 1][0])),
+      ])
       .range([Math.min(0, width - 1000), width]);
 
     const x = originalX.copy().domain(currentDomain);
     const firstDate = x.invert(0);
     const lastDate = x.invert(width);
-    const visibleData = data.filter((d) => {
+    const visiblecandleData = candleData.filter((d) => {
       const date = new Date(d[0]);
       return date >= firstDate && date <= lastDate;
     });
 
     // 가격/볼륨 스케일 설정
-    const maxPrice = Number(d3.max(visibleData, (d) => d[2])) + 100;
-    const minPrice = Number(d3.min(visibleData, (d) => d[3])) - 100;
-    const volumeMax = Number(d3.max(visibleData, (d) => d[5]));
+    const maxPrice = Number(d3.max(visiblecandleData, (d) => d[2])) + 100;
+    const minPrice = Number(d3.min(visiblecandleData, (d) => d[3])) - 100;
+    const volumeMax = Number(d3.max(visiblecandleData, (d) => d[5]));
 
     const y = d3
       .scaleLinear()
@@ -106,11 +112,11 @@ export default function Draw({
     });
 
     // MACD 데이터 계산
-    const macdData = calculateMACD(data);
+    const macdcandleData = calculateMACD(candleData);
 
     // MACD를 위한 y축 스케일 설정
-    const macdMax = Math.max(...macdData.map((d) => Math.max(d.macd, d.signal)));
-    const macdMin = Math.min(...macdData.map((d) => Math.min(d.macd, d.signal)));
+    const macdMax = Math.max(...macdcandleData.map((d) => Math.max(d.macd, d.signal)));
+    const macdMin = Math.min(...macdcandleData.map((d) => Math.min(d.macd, d.signal)));
     const macdFluctuation = Math.max(macdMax, -macdMin) * 1.2;
 
     const yMACD = d3
@@ -119,25 +125,26 @@ export default function Draw({
       .range([height * volumeChartHeightRatio, height * candleChartHeightRatio]);
 
     // 캔들 너비 계산
-    const candleWidth = (x(new Date(Number(data[1][0]))) - x(new Date(Number(data[0][0])))) * 0.8;
+    const candleWidth =
+      (x(new Date(Number(candleData[1][0]))) - x(new Date(Number(candleData[0][0])))) * 0.8;
 
     // Canvas 생성 및 캔들/볼륨/MACD 그리기
     const { ctx } = createCanvasInSVG(svg, width, height);
-    drawCandlesOnCanvas(ctx, data, x, y, candleWidth);
-    drawVolumeOnCanvas(ctx, data, x, yVolume, candleWidth, height);
-    drawMACD(ctx, macdData, x, yMACD, yMACD(0), candleWidth);
-    console.log(macdData, 'macd');
+    drawCandlesOnCanvas(ctx, candleData, x, y, candleWidth);
+    drawVolumeOnCanvas(ctx, candleData, x, yVolume, candleWidth, height);
+    drawMACD(ctx, macdcandleData, x, yMACD, yMACD(0), candleWidth);
+    console.log(macdcandleData, 'macd');
 
-    const movingAverageData = calculateMovingAverage(data, 5);
-    const ma10Data = calculateMovingAverage(data, 10);
-    const ma20Data = calculateMovingAverage(data, 20);
+    const movingAveragecandleData = calculateMovingAverage(candleData, 5);
+    const ma10candleData = calculateMovingAverage(candleData, 10);
+    const ma20candleData = calculateMovingAverage(candleData, 20);
 
-    drawMovingAverage(ctx, movingAverageData, x, y, colors.gray);
-    drawMovingAverage(ctx, ma10Data, x, y, colors.blue);
-    drawMovingAverage(ctx, ma20Data, x, y, colors.red);
+    drawMovingAverage(ctx, movingAveragecandleData, x, y, colors.gray);
+    drawMovingAverage(ctx, ma10candleData, x, y, colors.blue);
+    drawMovingAverage(ctx, ma20candleData, x, y, colors.red);
 
-    const bollingerBandData = calculateBollingerBands(data, 20);
-    drawBollingerBands(ctx, bollingerBandData, x, y, colors.green);
+    const bollingerBandcandleData = calculateBollingerBands(candleData, 20);
+    drawBollingerBands(ctx, bollingerBandcandleData, x, y, colors.green);
 
     const listeningRect = svg
       .append('rect')
@@ -154,7 +161,7 @@ export default function Draw({
       .on('mousemove', (event) =>
         handleMouseMove({
           event,
-          data,
+          data: candleData,
           svg,
           width,
           height,
@@ -183,16 +190,16 @@ export default function Draw({
       const visibleDomain = rescaleX.domain();
       scaleRef.current.xDomain = visibleDomain;
 
-      // Filter data points within visible domain
-      const visibleData = data.filter((d) => {
+      // Filter candleData points within visible domain
+      const visiblecandleData = candleData.filter((d) => {
         const date = new Date(d[0]);
         return date >= visibleDomain[0] && date <= visibleDomain[1];
       });
 
-      // Recalculate y scale based on visible data
-      const visibleMax = Number(d3.max(visibleData, (d) => d[2])) + 150;
-      const visibleMin = Number(d3.min(visibleData, (d) => d[3])) - 150;
-      const visibleVolumeMax = Number(d3.max(visibleData, (d) => d[5]));
+      // Recalculate y scale based on visible candleData
+      const visibleMax = Number(d3.max(visiblecandleData, (d) => d[2])) + 150;
+      const visibleMin = Number(d3.min(visiblecandleData, (d) => d[3])) - 150;
+      const visibleVolumeMax = Number(d3.max(visiblecandleData, (d) => d[5]));
       //   console.log(visibleDomain, visibleMax, visibleMin);
 
       const rescaleY = d3
@@ -206,13 +213,17 @@ export default function Draw({
         .range([height, height * volumeChartHeightRatio + 4]);
 
       // MACD 다시 계산 및 그리기
-      const visibleMACDData = macdData.filter((d) => {
+      const visibleMACDcandleData = macdcandleData.filter((d) => {
         const date = new Date(d.timestamp);
         return date >= visibleDomain[0] && date <= visibleDomain[1];
       });
 
-      const visibleMACDMax = Math.max(...visibleMACDData.map((d) => Math.max(d.macd, d.signal)));
-      const visibleMACDMin = Math.min(...visibleMACDData.map((d) => Math.min(d.macd, d.signal)));
+      const visibleMACDMax = Math.max(
+        ...visibleMACDcandleData.map((d) => Math.max(d.macd, d.signal))
+      );
+      const visibleMACDMin = Math.min(
+        ...visibleMACDcandleData.map((d) => Math.min(d.macd, d.signal))
+      );
       const visibleMACDFluctuation = Math.max(visibleMACDMax, -visibleMACDMin) * 1.2;
 
       const rescaleYMACD = d3
@@ -243,16 +254,23 @@ export default function Draw({
         const zoomedCandleWidth = candleWidth * transform.k;
 
         // 선명한 렌더링을 위해 업데이트된 함수 사용
-        drawCandlesOnCanvas(ctx, data, rescaleX, rescaleY, zoomedCandleWidth);
-        drawVolumeOnCanvas(ctx, data, rescaleX, rescaleYVolume, zoomedCandleWidth, height);
-        drawMovingAverage(ctx, movingAverageData, rescaleX, rescaleY, colors.gray);
-        drawMovingAverage(ctx, ma10Data, rescaleX, rescaleY, colors.blue);
-        drawMovingAverage(ctx, ma20Data, rescaleX, rescaleY, colors.red);
-        drawBollingerBands(ctx, bollingerBandData, rescaleX, rescaleY, colors.green);
+        drawCandlesOnCanvas(ctx, candleData, rescaleX, rescaleY, zoomedCandleWidth);
+        drawVolumeOnCanvas(ctx, candleData, rescaleX, rescaleYVolume, zoomedCandleWidth, height);
+        drawMovingAverage(ctx, movingAveragecandleData, rescaleX, rescaleY, colors.gray);
+        drawMovingAverage(ctx, ma10candleData, rescaleX, rescaleY, colors.blue);
+        drawMovingAverage(ctx, ma20candleData, rescaleX, rescaleY, colors.red);
+        drawBollingerBands(ctx, bollingerBandcandleData, rescaleX, rescaleY, colors.green);
 
         // MACD 다시 계산 및 그리기
 
-        drawMACD(ctx, visibleMACDData, rescaleX, rescaleYMACD, rescaleYMACD(0), zoomedCandleWidth);
+        drawMACD(
+          ctx,
+          visibleMACDcandleData,
+          rescaleX,
+          rescaleYMACD,
+          rescaleYMACD(0),
+          zoomedCandleWidth
+        );
       }
 
       // svg.selectAll('.tick line').style('stroke', gray).style('stroke-width', 0.2);
@@ -261,7 +279,7 @@ export default function Draw({
         .on('mousemove', (event) =>
           handleMouseMove({
             event,
-            data: visibleData,
+            data: visiblecandleData,
             svg,
             width,
             height,
@@ -279,9 +297,9 @@ export default function Draw({
       //   const [xCoord, yCoord] = d3.pointer(e);
       //   const bisectDate = d3.bisector((d: any) => d.index).left;
       //   const x0 = rescaleXIndex.invert(xCoord);
-      //   const i = bisectDate(data, x0);
-      //   const d0 = data[i - 1];
-      //   const d1 = data[i];
+      //   const i = bisectDate(candleData, x0);
+      //   const d0 = candleData[i - 1];
+      //   const d1 = candleData[i];
       //   if (!d0 || !d1) return;
       //   const d = x0 < (d0.index + d1.index) / 2 ? d0 : d1;
       //   const xPos = rescaleX(d[0]);
@@ -348,7 +366,7 @@ export default function Draw({
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [data]);
+  }, [candleData]);
 
   return <div className="absolute inset-0 pointer-events-none" ref={divRef}></div>;
 }
