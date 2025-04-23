@@ -1,0 +1,42 @@
+{
+  "name": "bitcoin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@heroui/react": "^2.7.5",
+    "@prisma/client": "^6.6.0",
+    "axios": "^1.7.2",
+    "bybit-api": "^3.11.0",
+    "d3": "^7.9.0",
+    "echarts": "^5.5.1",
+    "echarts-for-react": "^3.0.2",
+    "framer-motion": "^12.6.3",
+    "jsdom": "^26.0.0",
+    "next": "^14.2.28",
+    "pako": "^2.1.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^20",
+    "@types/pako": "^2.0.3",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5",
+    "postcss": "^8",
+    "prettier": "^3.5.3",
+    "prisma": "^6.6.0",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

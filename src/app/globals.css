@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-variant-numeric: tabular-nums;
+}
+
+.axis-text {
+  font-size: 12px;
+}

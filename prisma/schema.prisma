@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique
+  password    String
+  email       String    @unique
+  name        String
+  isMember    Boolean   @default(false)
+  isAdmin     Boolean   @default(false)
+  isSuperamin Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLogin   DateTime?
+  isActive    Boolean   @default(true)
+  //
+  // company      Company            @relation(fields: [companyId], references: [id])
+  // companyId    Int                @default(0)
+  // groups       UserGroups[]
+  // notes        UserNotes[]
+  // reservations UserReservations[]
+}
+
+model BitcoinTrade {
+  id        Int      @id
+  timestamp BigInt   // 밀리초 단위 타임스탬프
+  price     Float    // 거래 가격
+  volume    Float    // 거래량
+  side      String   // 거래 방향 (buy/sell)
+  
+  @@index([timestamp]) // 타임스탬프로 쿼리할 때 성능 향상을 위한 인덱스
+}
+
+model CandleData {
+  id           Int      @id @default(autoincrement())
+  timestamp    BigInt   // 캔들 시작 타임스탬프
+  open         Float    // 시가
+  high         Float    // 고가
+  low          Float    // 저가
+  close        Float    // 종가
+  volume       Float    // 거래량
+  symbol       String   // 거래 심볼 (예: BTCUSDT)
+  interval     String   // 캔들 간격 (예: 1m, 5m, 1h, 1d)
+  
+  @@unique([timestamp, symbol, interval])
+  @@index([timestamp])
+  @@index([symbol, interval])
+}
