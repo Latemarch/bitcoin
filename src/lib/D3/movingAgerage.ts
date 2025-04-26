@@ -1,6 +1,5 @@
 import { BybitKline } from '@/types/type';
-import { colors } from './candlesChart';
-
+import { colors } from '../constants';
 type MovingAverageData = {
   timestamp: number;
   value: number;

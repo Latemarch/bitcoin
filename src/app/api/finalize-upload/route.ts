@@ -8,20 +8,13 @@ import { createReadStream, createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import * as readline from 'readline';
 
-// 대용량 처리를 위한 환경 변수 설정
-process.env.NODE_OPTIONS = '--max-old-space-size=8192'; // 메모리 제한 증가
-
-const prisma = new PrismaClient({
-  log: ['warn', 'error'], // 로그 레벨 최소화
-});
+const prisma = new PrismaClient();
 const tempDir = path.join(os.tmpdir(), 'bitcoin-upload');
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     const { fileName } = data;
-    const url = new URL(request.url);
-    const forceReprocess = url.searchParams.get('force') === 'true';
 
     if (!fileName) {
       return NextResponse.json({ error: '파일 이름이 필요합니다.' }, { status: 400 });
@@ -53,10 +46,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 이미 처리된 파일인 경우에도 다시 처리할 수 있도록 상태 초기화
     if (status.completed) {
-      console.log(`이미 처리된 파일을 다시 처리합니다: ${fileName}`);
-      status.completed = false;
+      return NextResponse.json({
+        success: true,
+        message: '이미 처리 완료된 파일입니다.',
+        count: status.totalCount || 0,
+      });
     }
 
     // 모든 청크를 하나의 파일로 병합
@@ -108,51 +103,12 @@ export async function POST(request: NextRequest) {
       crlfDelay: Infinity,
     });
 
-    // CSV 파일의 실제 레코드 수 계산 (첫 번째 스캔)
-    let totalCSVRecords = 0;
-    let isCountingHeader = true;
+    let isFirstLine = true;
+    let count = 0;
+    const batchSize = 1000;
+    let batch: any[] = [];
 
     for await (const line of rl) {
-      // 헤더 라인 건너뛰기
-      if (isCountingHeader) {
-        isCountingHeader = false;
-        continue;
-      }
-
-      // 빈 라인은 건너뛰기
-      if (!line.trim()) continue;
-
-      totalCSVRecords++;
-    }
-
-    console.log(`CSV 파일 총 레코드 수: ${totalCSVRecords}`);
-
-    // 메모리 정리
-    global.gc && global.gc();
-
-    // 스트림 다시 열기 (두 번째 스캔 - 실제 처리)
-    const fileStream2 = createReadStream(uncompressedFilePath);
-    const rl2 = readline.createInterface({
-      input: fileStream2,
-      crlfDelay: Infinity,
-    });
-
-    // 병렬 처리를 위한 설정
-    const MAX_PARALLEL_BATCHES = 5; // 동시에 처리할 배치 수
-    const batchSize = 10000; // 각 배치당 레코드 수
-    const maxParallelRecords = batchSize * MAX_PARALLEL_BATCHES;
-    let allRecords: any[] = [];
-    let count = 0;
-    let isFirstLine = true;
-    let lastLogTime = Date.now();
-    const logInterval = 5000; // 5초마다 로그 출력
-
-    console.log(
-      `CSV 파일 병렬 처리 시작 (${MAX_PARALLEL_BATCHES}개 배치 동시 처리, 배치당 ${batchSize}개 레코드)`
-    );
-
-    // 모든 레코드 수집
-    for await (const line of rl2) {
       // 헤더 라인 건너뛰기
       if (isFirstLine) {
         isFirstLine = false;
@@ -170,77 +126,55 @@ export async function POST(request: NextRequest) {
 
       try {
         // 새 ID 생성: filePrefix + 원래 ID
-        const parsedRecord = {
+        // 예: 25년 1월 파일의 ID 1 => 25011
+        const newId = parseInt(`${filePrefix}${originalId.trim()}`);
+
+        // 배치에 추가
+        batch.push({
           id: parseInt(originalId.trim()),
           timestamp: BigInt(timestamp.trim()),
           price: parseFloat(price.trim()),
           volume: parseFloat(volume.trim()),
           side: side.trim(),
-        };
+        });
 
-        allRecords.push(parsedRecord);
+        // 배치 사이즈에 도달하면 데이터베이스에 삽입
+        if (batch.length >= batchSize) {
+          await prisma.bitcoinTrade.createMany({
+            data: batch,
+            skipDuplicates: true,
+          });
+          count += batch.length;
+          batch = [];
 
-        // 메모리 관리를 위해 일정 크기마다 처리
-        if (allRecords.length >= maxParallelRecords) {
-          const processingRecords = [...allRecords];
-          allRecords = [];
-
-          // 병렬 처리
-          const processedCount = await processRecordsInParallel(
-            processingRecords,
-            batchSize,
-            MAX_PARALLEL_BATCHES
-          );
-          count += processedCount;
-
-          // 로깅
-          const currentTime = Date.now();
-          if (currentTime - lastLogTime >= logInterval) {
-            const percent = Math.round((count / totalCSVRecords) * 100);
-            console.log(`처리 중: ${count}개 레코드 완료 (${percent}%)`);
-            lastLogTime = currentTime;
-          }
-
-          // 메모리 정리
-          global.gc && global.gc();
+          // 진행 상황 로깅
+          console.log(`처리 중: ${count}개 레코드 완료`);
         }
       } catch (error) {
         console.error('행 처리 오류:', line, error);
+        // 오류가 있는 행은 건너뛰고 계속 진행
       }
     }
 
-    // 남은 레코드 처리
-    if (allRecords.length > 0) {
-      const processedCount = await processRecordsInParallel(
-        allRecords,
-        batchSize,
-        MAX_PARALLEL_BATCHES
-      );
-      count += processedCount;
+    // 남은 배치 처리
+    if (batch.length > 0) {
+      await prisma.bitcoinTrade.createMany({
+        data: batch,
+        skipDuplicates: true,
+      });
+      count += batch.length;
     }
-
-    // 메모리 정리
-    global.gc && global.gc();
 
     // 상태 업데이트
     status.completed = true;
     status.totalCount = count;
-    status.totalCSVRecords = totalCSVRecords;
-    status.actualCount = await prisma.bitcoinTrade.count();
     fs.writeFileSync(statusPath, JSON.stringify(status, null, 2));
 
-    // 데이터베이스의 실제 레코드 수 확인
-    const actualCount = await prisma.bitcoinTrade.count();
-    console.log(
-      `처리 완료: CSV 파일 총 ${totalCSVRecords}개, 처리 ${count}개, 데이터베이스 ${actualCount}개 레코드`
-    );
+    console.log(`처리 완료: 총 ${count}개 레코드`);
 
     return NextResponse.json({
       success: true,
-      csvRecords: totalCSVRecords,
-      processedRecords: count,
-      dbRecords: actualCount,
-      message: `파일 처리 완료! \n원본 CSV: ${totalCSVRecords}개 레코드\n처리됨: ${count}개 레코드\n데이터베이스 저장: ${actualCount}개 레코드`,
+      count,
     });
   } catch (error: any) {
     console.error('최종 처리 오류:', error);
@@ -249,43 +183,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-/**
- * 레코드를 병렬로 처리하는 함수
- */
-async function processRecordsInParallel(
-  records: any[],
-  batchSize: number,
-  maxParallelBatches: number
-): Promise<number> {
-  // 배치로 나누기
-  const batches: any[][] = [];
-  for (let i = 0; i < records.length; i += batchSize) {
-    batches.push(records.slice(i, i + batchSize));
-  }
-
-  let processedCount = 0;
-
-  // 배치를 병렬로 처리 (최대 maxParallelBatches개씩)
-  for (let i = 0; i < batches.length; i += maxParallelBatches) {
-    const batchPromises = batches.slice(i, i + maxParallelBatches).map(async (batch) => {
-      try {
-        const result = await prisma.bitcoinTrade.createMany({
-          data: batch,
-          skipDuplicates: true,
-        });
-        return result.count;
-      } catch (error) {
-        console.error('배치 처리 오류:', error);
-        return 0;
-      }
-    });
-
-    // 병렬 실행 후 결과 수집
-    const results = await Promise.all(batchPromises);
-    processedCount += results.reduce((sum, count) => sum + count, 0);
-  }
-
-  return processedCount;
 }
